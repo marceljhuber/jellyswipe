@@ -8,3 +8,8 @@ obj/
 build/
 dist/
 .jf/
+artifacts/
+.matrix/
+.demo-media/
+.matrix-run.log
+.demo/

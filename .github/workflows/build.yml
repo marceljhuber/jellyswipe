@@ -8,10 +8,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ["10.9", "10.10", "10.11", "12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
-      - run: dotnet build Jellyfin.Plugin.JellySwipe -c Release
-      - run: node --check Jellyfin.Plugin.JellySwipe/Web/app.js && node --check Jellyfin.Plugin.JellySwipe/Web/inject.js
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - run: dotnet build Jellyfin.Plugin.JellySwipe -c Release -p:JellyfinTarget=${{ matrix.target }}
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: for f in Jellyfin.Plugin.JellySwipe/Web/*.js; do node --check "$f"; done

@@ -14,6 +14,7 @@ public sealed class RoomManager : IDisposable
     private static readonly string[] Colors = ["#fd267a", "#ff7854", "#21d07c", "#1ec0ff", "#a26bfa", "#f5b748", "#ff4d6d", "#00c2a8"];
     private static readonly HashSet<string> LikeChoices = ["like", "super"];
     private static readonly TimeSpan RoomTtl = TimeSpan.FromHours(6);
+    private const int MaxRooms = 200;
 
     private readonly ConcurrentDictionary<string, Room> _rooms = new();
     private readonly LibraryService _library;
@@ -86,6 +87,15 @@ public sealed class RoomManager : IDisposable
         if (settings.LibraryIds.Length == 0)
         {
             throw new GameException(400, "Pick at least one library");
+        }
+
+        if (_rooms.Count >= MaxRooms)
+        {
+            Cleanup();
+            if (_rooms.Count >= MaxRooms)
+            {
+                throw new GameException(503, "Too many open lobbies — try again later");
+            }
         }
 
         settings.Goal = settings.Goal is 1 or 3 or 5 ? settings.Goal : 3;

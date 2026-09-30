@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Text.Json;
-using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.JellySwipe.Game;
 using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
@@ -33,7 +32,10 @@ public sealed class JellySwipeController(
         [".css"] = "text/css; charset=utf-8",
         [".svg"] = "image/svg+xml",
         [".webmanifest"] = "application/manifest+json",
+        [".woff2"] = "font/woff2",
     };
+
+    private static readonly string AssetVersion = typeof(JellySwipeController).Assembly.GetName().Version?.ToString() ?? "0";
 
     private static Configuration.PluginConfiguration Config => Plugin.Instance?.Configuration ?? new Configuration.PluginConfiguration();
 
@@ -87,7 +89,16 @@ public sealed class JellySwipeController(
             return NotFound();
         }
 
-        Response.Headers.CacheControl = file.EndsWith(".html", StringComparison.Ordinal) ? "no-cache" : "public, max-age=300";
+        if (file.EndsWith(".html", StringComparison.Ordinal))
+        {
+            // Stamp asset URLs with the plugin version so phones never keep stale JS/CSS after an upgrade.
+            using var reader = new StreamReader(stream);
+            Response.Headers.CacheControl = "no-cache";
+            return Content(reader.ReadToEnd().Replace("{{v}}", AssetVersion, StringComparison.Ordinal), type);
+        }
+
+        // Versioned or content-stable files: cache for a day (fonts/icons), JS/CSS URLs carry ?v=.
+        Response.Headers.CacheControl = "public, max-age=86400";
         return File(stream, type);
     }
 

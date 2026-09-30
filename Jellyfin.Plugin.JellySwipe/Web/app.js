@@ -503,7 +503,7 @@ function cardHtml(it, depth) {
       <div class="info">
         <div class="title-row"><h2>${esc(it.name)}${it.year ? `<small>${it.year}</small>` : ''}</h2><button class="info-btn" aria-label="Details">${I.info}</button></div>
         <div class="meta">${it.type === 'Series' ? '<span class="type-badge">Series</span>' : ''}${meta}</div>
-        ${it.genres.length ? `<div class="tags">${it.genres.map((g) => `<span>${esc(g)}</span>`).join('')}</div>` : ''}
+        ${it.genres.length ? `<div class="tags">${it.genres.slice(0, 3).map((g) => `<span>${esc(g)}</span>`).join('')}</div>` : ''}
         ${idx === 0 && it.overview ? `<div class="overview">${esc(it.overview)}</div>` : ''}
       </div>
     </div>`;

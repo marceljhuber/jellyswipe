@@ -1,8 +1,5 @@
 using System.Security.Cryptography;
 using Jellyfin.Data.Enums;
-using Jellyfin.Database.Implementations.Entities;
-using Jellyfin.Database.Implementations.Enums;
-using Jellyfin.Data;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -52,7 +49,11 @@ public sealed class LibraryService(
     public User GetUser(Guid userId) => userManager.GetUserById(userId) ?? throw new GameException(403, "Host account no longer exists");
 
     private Folder[] Views(User user) =>
+#if JF_10_9
+        userViewManager.GetUserViews(new UserViewQuery { UserId = user.Id })
+#else
         userViewManager.GetUserViews(new UserViewQuery { User = user })
+#endif
             .Where(v => SupportedCollections.Contains((v as IHasCollectionType)?.CollectionType))
             .ToArray();
 
@@ -79,7 +80,22 @@ public sealed class LibraryService(
         DtoOptions = new DtoOptions(true),
     };
 
+    private readonly Microsoft.Extensions.Caching.Memory.MemoryCache _genreCache = new(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions { SizeLimit = 200 });
+
+    /// <summary>Genres present in the selected libraries (cached for 10 minutes per user + library selection).</summary>
     public IReadOnlyList<GenreInfo> Genres(User user, IEnumerable<string> libraryIds)
+    {
+        var ids = libraryIds.Order(StringComparer.Ordinal).ToArray();
+        var key = $"{user.Id:N}|{string.Join(',', ids)}";
+        return Microsoft.Extensions.Caching.Memory.CacheExtensions.GetOrCreate(_genreCache, key, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+            entry.Size = 1;
+            return LoadGenres(user, ids);
+        })!;
+    }
+
+    private List<GenreInfo> LoadGenres(User user, IEnumerable<string> libraryIds)
     {
         var names = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var view in SelectedViews(user, libraryIds))
@@ -117,8 +133,13 @@ public sealed class LibraryService(
                 query.IsPlayed = false;
             }
 
-            // Genre filtering happens in memory, so only cap the query when there is no genre filter.
-            if (genres.Count == 0)
+            if (genres.Count > 0)
+            {
+                // Let the database pre-filter; the in-memory check below keeps results exact either way.
+                query.Genres = genres.ToArray();
+                query.Limit = per * 4;
+            }
+            else
             {
                 query.Limit = per;
             }
@@ -175,7 +196,7 @@ public sealed class LibraryService(
             Type = item is Series ? "Series" : "Movie",
             Year = item.ProductionYear,
             Overview = item.Overview ?? string.Empty,
-            Genres = (item.Genres ?? []).Take(4).ToArray(),
+            Genres = (item.Genres ?? []).Take(6).ToArray(),
             Rating = item.CommunityRating is { } r ? Math.Round(r, 1) : null,
             Critic = item.CriticRating,
             Official = string.IsNullOrEmpty(item.OfficialRating) ? null : item.OfficialRating,

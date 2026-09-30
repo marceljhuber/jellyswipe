@@ -1,0 +1,8 @@
+<Project>
+  <!-- Per-Jellyfin-target build folders outside the project dir, so variants never compile each other's generated files. -->
+  <PropertyGroup>
+    <JellyfinTarget Condition="'$(JellyfinTarget)' == ''">10.11</JellyfinTarget>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/obj/$(JellyfinTarget)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts/bin/$(JellyfinTarget)/</BaseOutputPath>
+  </PropertyGroup>
+</Project>

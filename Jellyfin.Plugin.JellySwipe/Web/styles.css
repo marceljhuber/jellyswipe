@@ -1,3 +1,7 @@
+/* Self-hosted fonts (SIL OFL 1.1) so JellySwipe works on offline LANs. */
+@font-face { font-family: Nunito; src: url(nunito.woff2) format("woff2"); font-weight: 400 900; font-display: swap; }
+@font-face { font-family: Pacifico; src: url(pacifico.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+
 :root {
   --brand-a: #fd267a;
   --brand-b: #ff7854;

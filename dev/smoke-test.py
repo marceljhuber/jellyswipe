@@ -109,6 +109,16 @@ def main():
         assert req(f"rooms/{code}")["status"] == "finished", "solo goal 1 reached"
         req(f"rooms/{code}/leave", {"secret": hs})
         req(f"rooms/{code}", expect=404)
+
+        # Genre filter: every card must carry the chosen genre
+        if genres:
+            g = genres[0]
+            gr = req("rooms", {"name": "Host", "settings": {"libraryIds": lib_ids, "goal": 1, "genreIds": [g["id"]], "genreNames": [g["name"]]}}, token=token)
+            req(f"rooms/{gr['code']}/start", {"secret": gr["secret"]})
+            gdeck = req(f"rooms/{gr['code']}/deck?secret={gr['secret']}")["deck"]
+            assert gdeck and all(g["name"].lower() in (x.lower() for x in c["genres"]) for c in gdeck), "genre filter leaked other titles"
+            print(f"genre '{g['name']}': {len(gdeck)} cards")
+            req(f"rooms/{gr['code']}/leave", {"secret": gr["secret"]})
     finally:
         logout(token)
     print("\n✅ JellySwipe smoke test passed")
