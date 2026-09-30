@@ -1,0 +1,13 @@
+services:
+  jellyswipe:
+    build: .
+    image: jellyswipe:latest
+    container_name: jellyswipe
+    restart: unless-stopped
+    ports:
+      - "8097:8097"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data

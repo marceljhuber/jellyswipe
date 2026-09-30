@@ -413,6 +413,7 @@ function renderLobby(same) {
 
   if (same && $('#players')) {
     $('#players').innerHTML = players;
+    $('#pcount').textContent = `${r.players.length}/12`;
     $('#lobby-footer').innerHTML = footer;
     bindLobby();
     return;
@@ -426,7 +427,7 @@ function renderLobby(same) {
         ${isLocal ? '<div class="hint">⚠ Open this page via the server\'s LAN address so phones can use the QR code.</div>' : ''}
         <div class="share-row"><button class="pill-btn" id="share">${I.share} Share invite</button></div>
         <div class="summary">${summary.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
-        <div class="section-title">Players <small>${r.players.length}/12</small></div>
+        <div class="section-title">Players <small id="pcount">${r.players.length}/12</small></div>
         <div class="players" id="players">${players}</div>
       </div>
       <div class="sticky-footer" id="lobby-footer">${footer}</div>
@@ -750,7 +751,7 @@ function openPlayersSheet() {
 function confetti(root, n = 40) {
   const wrap = document.createElement('div');
   wrap.className = 'confetti';
-  const glyphs = ['❤', '💖', '✨', '🍿', '🎬', '💘'];
+  const glyphs = ['❤️', '💖', '✨', '🍿', '🎬', '💘'];
   for (let i = 0; i < n; i++) {
     const c = document.createElement('i');
     c.textContent = glyphs[i % glyphs.length];
