@@ -27,26 +27,62 @@
     else home.parentNode.insertBefore(a, home.nextSibling);
   }
 
+  // New MUI layout (default in Jellyfin 12, optional in 10.9–10.11): clone a native drawer item so it looks identical.
   function muiDrawer() {
     var list = document.querySelector('.MuiDrawer-paper .MuiList-root');
     if (!list || list.querySelector('.jellyswipe-link')) return;
-    var li = document.createElement('li');
-    li.className = 'jellyswipe-link';
-    li.innerHTML = '<a href="' + href + '" style="display:flex;align-items:center;gap:32px;padding:8px 16px;color:inherit;text-decoration:none">' +
-      '<span class="material-icons" aria-hidden="true">favorite</span><span>JellySwipe</span></a>';
+    var items = list.querySelectorAll(':scope > li');
+    var template = null;
+    for (var i = items.length - 1; i >= 0; i--) {
+      if (items[i].querySelector('a[href^="#/home"]')) { template = items[i]; break; }
+    }
+    var li;
+    if (template) {
+      li = template.cloneNode(true);
+      var a = li.querySelector('a');
+      a.href = href;
+      a.classList.remove('Mui-selected');
+      a.removeAttribute('aria-current');
+      var icon = li.querySelector('.MuiListItemIcon-root');
+      if (icon) icon.innerHTML = FLAME.replace('width="24" height="24"', 'width="24" height="24" style="color:#fd4a6c"');
+      var text = li.querySelector('.MuiListItemText-primary');
+      if (text) text.textContent = 'JellySwipe';
+    } else {
+      li = document.createElement('li');
+      li.innerHTML = '<a href="' + href + '" style="display:flex;align-items:center;gap:32px;padding:8px 16px;color:inherit;text-decoration:none">' +
+        FLAME.replace('width="24" height="24"', 'width="24" height="24" style="color:#fd4a6c"') + '<span>JellySwipe</span></a>';
+    }
+    li.classList.add('jellyswipe-link');
     list.appendChild(li);
   }
 
   function headerButton() {
+    // Legacy layout
     var right = document.querySelector('.headerRight');
-    if (!right || right.querySelector('.jellyswipe-btn')) return;
-    var b = document.createElement('a');
-    b.className = 'headerButton headerButtonRight paper-icon-button-light jellyswipe-btn';
-    b.href = href;
-    b.title = 'JellySwipe';
-    b.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;color:#fd4a6c';
-    b.innerHTML = FLAME;
-    right.insertBefore(b, right.firstChild);
+    if (right && right.offsetParent && !right.querySelector('.jellyswipe-btn')) {
+      var b = document.createElement('a');
+      b.className = 'headerButton headerButtonRight paper-icon-button-light jellyswipe-btn';
+      b.href = href;
+      b.title = 'JellySwipe';
+      b.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;color:#fd4a6c';
+      b.innerHTML = FLAME;
+      right.insertBefore(b, right.firstChild);
+    }
+    // MUI layout: put it in front of the first right-hand toolbar button (SyncPlay / Cast / Search)
+    var bar = document.querySelector('.MuiAppBar-root .MuiToolbar-root');
+    if (bar && !bar.querySelector('.jellyswipe-btn')) {
+      var anchor = bar.querySelector('[aria-label="SyncPlay"], [aria-label="Cast to Device"], [aria-label="Search"], [aria-label="User Menu"]');
+      if (anchor) {
+        var m = document.createElement('a');
+        m.className = anchor.className + ' jellyswipe-btn';
+        m.href = href;
+        m.title = 'JellySwipe';
+        m.setAttribute('aria-label', 'JellySwipe');
+        m.style.color = '#fd4a6c';
+        m.innerHTML = FLAME;
+        anchor.parentNode.insertBefore(m, anchor);
+      }
+    }
   }
 
   var queued = false;

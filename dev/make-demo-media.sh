@@ -7,13 +7,19 @@ OUT=${1:-.demo-media}
 mkdir -p "$OUT/movies"
 TINY="$OUT/.tiny.mp4"
 [ -f "$TINY" ] || ffmpeg -loglevel error -f lavfi -i color=c=black:s=320x180:d=2 -f lavfi -i anullsrc=r=44100:cl=mono -t 2 -c:v libx264 -c:a aac -shortest "$TINY"
-BBB="$OUT/.bbb.mp4"
-[ -f "$BBB" ] || curl -sfL -o "$BBB" https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_2MB.mp4
+BBB="$OUT/.bbb.webm"   # VP9/Opus so it direct-plays even in open-source Chromium (no H.264)
+if [ ! -f "$BBB" ]; then
+  curl -sfL -o "$OUT/.bbb.mp4" https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_2MB.mp4
+  ffmpeg -loglevel error -stream_loop 2 -i "$OUT/.bbb.mp4" -c:v libvpx-vp9 -b:v 1500k -row-mt 1 -deadline realtime -cpu-used 8 -c:a libopus -t 30 "$BBB"
+fi
 while IFS= read -r title; do
   [ -z "$title" ] && continue
   mkdir -p "$OUT/movies/$title"
-  src=$TINY; [[ $title == Big\ Buck\ Bunny* ]] && src=$BBB
-  cp -n "$src" "$OUT/movies/$title/$title.mp4"
+  if [[ $title == Big\ Buck\ Bunny* ]]; then
+    rm -f "$OUT/movies/$title/$title.mp4"; cp -n "$BBB" "$OUT/movies/$title/$title.webm"
+  else
+    cp -n "$TINY" "$OUT/movies/$title/$title.mp4"
+  fi
 done <<'LIST'
 Big Buck Bunny (2008)
 Sintel (2010)

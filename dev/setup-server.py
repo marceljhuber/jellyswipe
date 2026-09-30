@@ -30,6 +30,9 @@ call("/Startup/User")
 call("/Startup/User", {"Name": "admin", "Password": "test"})
 call("/Startup/Complete", {}, method="POST")
 token = call("/Users/AuthenticateByName", {"Username": "admin", "Pw": "test"})["AccessToken"]
+if "--no-library" in sys.argv:
+    print("    server ready (no library)")
+    sys.exit(0)
 call("/Library/VirtualFolders?name=Movies&collectionType=movies&paths=%2Fmedia%2Fmovies&refreshLibrary=true", {"LibraryOptions": {}}, token)
 for _ in range(90):
     time.sleep(2)

@@ -12,7 +12,29 @@
 
 Runs entirely inside Jellyfin at `https://<your-jellyfin>/JellySwipe/`, with no extra server or container. See [IDEA.md](IDEA.md) for the original idea and design decisions.
 
-**Requires Jellyfin 10.11.x.**
+<p align="center">
+  <img src="marketing/assets/screenshots/card.png" width="220" alt="Swiping a card">
+  <img src="marketing/assets/screenshots/lobby-2.png" width="220" alt="Lobby with QR code">
+  <img src="marketing/assets/screenshots/match.png" width="220" alt="It's a Match!">
+  <img src="marketing/assets/screenshots/results.png" width="220" alt="Results">
+</p>
+
+## Compatibility
+
+| Jellyfin | Plugin build | Tested on | Sidebar entry |
+|---|---|---|---|
+| 10.9.x | `0.2.0.109` (.NET 8) | 10.9.11 | open `/JellySwipe/` directly (File Transformation isn't available for 10.9) |
+| 10.10.x | `0.2.0.1010` (.NET 8) | 10.10.7 | ✅ with File Transformation 2.5.x |
+| 10.11.x | `0.2.0.1011` (.NET 9) | 10.11.0, 10.11.11 | ✅ with a File Transformation build matching your server |
+| 12.x | `0.2.0.1200` (.NET 10) | 12.0, 12.1 | ✅ (new MUI layout supported) |
+
+The plugin catalog installs the right build automatically. Each release is runtime-tested against real Jellyfin containers with `dev/test-matrix.sh`.
+
+It plays nicely with other plugins: it only adds its own `/JellySwipe` routes, ships no shared DLLs, and hooks into the web client through File Transformation's shared `index.html` pipeline. That's verified alongside Media Bar, Jellyfin Enhanced, JavaScript Injector, Intro Skipper and JellyTag. Without File Transformation you can still add the sidebar entry with the **JavaScript Injector** plugin:
+
+```js
+const s = document.createElement('script'); s.src = '../JellySwipe/inject.js'; document.head.appendChild(s);
+```
 
 ## Install
 
@@ -21,16 +43,16 @@ Runs entirely inside Jellyfin at `https://<your-jellyfin>/JellySwipe/`, with no 
 1. Jellyfin Dashboard → **Plugins → Repositories → +**
    - Name: `JellySwipe`
    - URL: `https://raw.githubusercontent.com/marceljhuber/jellyswipe/main/manifest.json`
-2. **Catalog → JellySwipe → Install**, then restart Jellyfin.
+2. **Catalog → JellySwipe → Install**, then restart Jellyfin. The catalog picks the build for your Jellyfin version.
 3. Optional, for the sidebar entry: also install **File Transformation** from `https://www.iamparadox.dev/jellyfin/plugins/manifest.json`.
 
 ### Manually
 
-Download `jellyswipe_<version>.zip` from the [releases](https://github.com/marceljhuber/jellyswipe/releases) (or build it, see below) and extract the DLL into the Jellyfin config's plugin folder, e.g.
+Download the zip for your Jellyfin version from the [releases](https://github.com/marceljhuber/jellyswipe/releases) (`jellyswipe_0.2.0.<109|1010|1011|1200>.zip`, see the table above) and extract the DLL into the Jellyfin config's plugin folder, e.g.
 
 ```bash
-mkdir -p /config/plugins/JellySwipe_0.1.0.0
-unzip jellyswipe_0.1.0.0.zip -d /config/plugins/JellySwipe_0.1.0.0
+mkdir -p /config/plugins/JellySwipe_0.2.0.1011
+unzip jellyswipe_0.2.0.1011.zip -d /config/plugins/JellySwipe_0.2.0.1011
 # then restart Jellyfin
 ```
 
@@ -85,22 +107,23 @@ By default anyone who can reach JellySwipe can host games as the default host us
 ## Development
 
 ```bash
-# build (needs the .NET 9 SDK)
-dotnet build Jellyfin.Plugin.JellySwipe -c Release
+# build one variant (needs the matching .NET SDK: 8 for 10.9/10.10, 9 for 10.11, 10 for 12)
+dotnet build Jellyfin.Plugin.JellySwipe -c Release -p:JellyfinTarget=10.11     # 10.9 | 10.10 | 10.11 | 12
 
-# throwaway Jellyfin 10.11 with the plugin
-mkdir -p .jf/config/plugins/JellySwipe .jf/media
-cp Jellyfin.Plugin.JellySwipe/bin/Release/net9.0/Jellyfin.Plugin.JellySwipe.dll .jf/config/plugins/JellySwipe/
-docker run -d --name jf-dev -p 8096:8096 --user "$(id -u):$(id -g)" \
-  -v "$PWD/.jf/config:/config" --tmpfs "/cache:uid=$(id -u),gid=$(id -g)" \
-  -v "$PWD/.jf/media:/media:ro" jellyfin/jellyfin:10.11.11
+# demo Jellyfin with the plugin + an open-licensed demo library (admin / test)
+dev/demo-server.sh 12.1            # → http://localhost:28296/JellySwipe/
 
-# API smoke test (lobby, matches, undo rules, solo, guest device list)
+# runtime compatibility matrix (Docker): 10.9.11, 10.10.7, 10.11.0, 10.11.11, 12.0, 12.1
+dev/test-matrix.sh
+
+# API smoke test against any server
 JF_URL=http://localhost:8096 JF_USER=admin JF_PASS=... python3 dev/smoke-test.py
 
-# release zip + manifest entry
-./scripts/package.sh        # or push a v* tag and let GitHub Actions build the release
+# release: all variants + manifest entries
+./scripts/package.sh               # or push a v* tag and let GitHub Actions publish the release
 ```
+
+The promo video lives in `marketing/video` (Remotion). `node record/record.mjs <demo-url>` records the real app on emulated phones plus a TV, and `npm run render` renders it.
 
 ## License
 
