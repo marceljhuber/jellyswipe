@@ -1,0 +1,17 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      - run: dotnet build Jellyfin.Plugin.JellySwipe -c Release
+      - run: node --check Jellyfin.Plugin.JellySwipe/Web/app.js && node --check Jellyfin.Plugin.JellySwipe/Web/inject.js

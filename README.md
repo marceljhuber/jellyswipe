@@ -1,92 +1,103 @@
 # JellySwipe 🔥
 
-**Tinder for your Jellyfin library.** Pick libraries and genres, open a lobby, and everyone swipes on their phone. The first titles *everyone* swiped right on win, and JellySwipe can start the winner on your TV automatically.
+**Tinder for your Jellyfin library, as a native Jellyfin plugin.** Pick libraries and genres, open a lobby, and everyone swipes on their phone. The first titles *everyone* swiped right on win, and JellySwipe can start the winner on your TV automatically.
 
 - 🃏 Tinder-style cards: drag with rotation, LIKE / NOPE / SUPER LIKE stamps, tap to flip poster ↔ backdrops, rewind, "It's a Match!" celebration
-- 👥 Lobbies with a **4-digit code + QR code**. Nobody needs a Jellyfin account to join.
+- 👥 Lobbies with a **4-digit code + QR code**. Guests join **without a Jellyfin account**.
 - 🎯 Goal of **1, 3 or 5 matches**. Solo mode turns right-swipes into your personal picks.
-- 📺 **Play on any Jellyfin device** that supports remote control (Android TV, web, mobile…). Series start at Next Up, or S1E1.
-- ⏱ Optional **auto-play of the winner** with a 10-second, cancellable countdown
-- 📱 Mobile-first PWA (add to home screen, safe-area aware, haptics). Also works on desktop: ← → ↑ keys, Z to undo, Space for details.
-- 🌗 Light and dark mode. No build step, one runtime dependency (`qrcode`).
+- 📺 **Play on any Jellyfin device** you can control (Android TV, web, mobile…). Series start at the first unwatched episode and keep going.
+- ⏱ Optional **auto-play of the winner** with a cancellable countdown
+- 🧭 **Sidebar entry + header button** in Jellyfin web (via the [File Transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) plugin, optional)
+- 📱 Mobile-first PWA, dark mode, haptics. Also works on desktop: ← → ↑ keys, Z to undo, Space for details.
 
-See [IDEA.md](IDEA.md) for the original idea and the design decisions.
+Runs entirely inside Jellyfin at `https://<your-jellyfin>/JellySwipe/`, with no extra server or container. See [IDEA.md](IDEA.md) for the original idea and design decisions.
 
-## Quick start
+**Requires Jellyfin 10.11.x.**
+
+## Install
+
+### From the plugin repository
+
+1. Jellyfin Dashboard → **Plugins → Repositories → +**
+   - Name: `JellySwipe`
+   - URL: `https://raw.githubusercontent.com/marceljhuber/jellyswipe/main/manifest.json`
+2. **Catalog → JellySwipe → Install**, then restart Jellyfin.
+3. Optional, for the sidebar entry: also install **File Transformation** from `https://www.iamparadox.dev/jellyfin/plugins/manifest.json`.
+
+### Manually
+
+Download `jellyswipe_<version>.zip` from the [releases](https://github.com/marceljhuber/jellyswipe/releases) (or build it, see below) and extract the DLL into the Jellyfin config's plugin folder, e.g.
 
 ```bash
-npm install
-npm start               # http://<this-machine-LAN-IP>:8097
+mkdir -p /config/plugins/JellySwipe_0.1.0.0
+unzip jellyswipe_0.1.0.0.zip -d /config/plugins/JellySwipe_0.1.0.0
+# then restart Jellyfin
 ```
 
-On first start the page asks for your Jellyfin URL and a Jellyfin login. The access token is stored in `data/auth.json` (gitignored, mode 600). Players who join only type a name.
+## Use it
 
-> Open JellySwipe via the machine's **LAN address**, not `localhost`, so the lobby QR code works for phones.
+- **Open:** the flame button in Jellyfin's header, **JellySwipe** in the sidebar, or `https://<your-jellyfin>/JellySwipe/`.
+- **Host:** if you're signed in to Jellyfin in that browser you're recognised automatically; otherwise sign in on the JellySwipe page. You only see libraries your account can access.
+- **Guests:** scan the lobby QR code or open `/JellySwipe/` and type the 4-digit code. No account needed. This can be turned off in the plugin settings.
+- **Play:** tap ▶ on any result and pick a device, or choose an auto-play device when creating the game. Devices appear while a Jellyfin app is open on them.
 
-### Docker
+### Settings (Dashboard → Plugins → JellySwipe)
 
-```bash
-cp .env.example .env    # optional: preconfigure URL / API key
-docker compose up -d --build
-```
-
-### Configuration (`.env`, all optional)
-
-| Variable | Purpose |
+| Setting | Default |
 |---|---|
-| `JELLYFIN_URL` | Jellyfin address as the server sees it (pre-fills the login form) |
-| `JELLYFIN_PUBLIC_URL` | Address used for "Open in Jellyfin" links in browsers |
-| `JELLYFIN_API_KEY` | Use an API key instead of a login; `JELLYFIN_USERNAME` selects the user context |
-| `JELLYFIN_USERNAME` / `JELLYFIN_PASSWORD` | Log in automatically on start |
-| `PORT` | Default `8097` |
-| `AUTOPLAY_DELAY_MS` | Countdown before auto-playing the winner (default `10000`) |
-
-## Make it feel like part of Jellyfin
-
-JellySwipe is a standalone web app, not a plugin. A Jellyfin plugin would be C#/.NET running inside the server, which needs a restart for every change and makes the realtime lobby awkward. To still reach it from Jellyfin's sidebar, add a custom menu link to jellyfin-web's `config.json` (in Docker usually `/jellyfin/jellyfin-web/config.json`; on Debian `/usr/share/jellyfin/web/config.json`):
-
-```json
-"menuLinks": [
-  { "name": "JellySwipe", "icon": "favorite", "url": "http://<jellyswipe-host>:8097" }
-]
-```
-
-All client URLs are relative, so JellySwipe also works behind a reverse proxy under a sub-path (e.g. `https://media.example.com/jellyswipe/`). For Server-Sent Events, disable proxy buffering on `/api/rooms/*/events`. JellySwipe already sends `X-Accel-Buffering: no` for nginx.
+| Allow guests without a Jellyfin account | on |
+| Show JellySwipe in the sidebar (needs File Transformation) | on |
+| Auto-play countdown | 10 s |
+| Maximum cards per game | 400 |
 
 ## How a game works
 
-1. **Create:** pick libraries (movies / shows / mixed), optional genres, the match goal, "only unwatched", and optionally a device for auto-play.
-2. **Lobby:** friends scan the QR code or type the code. With one player the host's button says *Play solo*.
+1. **Create:** pick libraries (movies / shows / collections / home videos), optional genres, the match goal, "only unwatched", and optionally an auto-play device.
+2. **Lobby:** friends join by QR code or lobby code. With one player the host's button says *Play solo*.
 3. **Swipe:** everyone gets the **same shuffled deck**, so matches happen quickly. A match is a title every player in the lobby liked or super-liked.
 4. **Finish:** when the goal is reached, everyone sees the celebration and the ranked results (super-likes rank first, then match order). If the deck runs out first, you get the matches so far plus the *closest calls*.
-5. **Play:** tap ▶ on any result and choose a device, or let auto-play start #1.
 
 ## Architecture
 
 ```
-public/            vanilla JS SPA (app.js), Tinder-style CSS, PWA manifest
-server.js          node:http server — static files, REST API, SSE, image proxy, QR
-src/jellyfin.js    Jellyfin API client (login/API key, libraries, genres, deck, sessions, play)
-src/rooms.js       in-memory lobbies, swipes, match detection, auto-play timer
-dev/               mock Jellyfin + end-to-end smoke test
+Jellyfin.Plugin.JellySwipe/
+  Plugin.cs                    plugin entry + dashboard settings page
+  PluginServiceRegistrator.cs  DI registrations
+  SidebarInjector.cs           registers an index.html transformation with File Transformation (reflection, optional)
+  Api/JellySwipeController.cs  /JellySwipe/ (embedded web app) and /JellySwipe/api/* (REST + Server-Sent Events)
+  Game/LibraryService.cs       libraries, genres, deck, controllable sessions, playback (Jellyfin internals, no HTTP)
+  Game/RoomManager.cs          in-memory lobbies, swipes, match detection, auto-play timer
+  Web/                         vanilla JS SPA, Tinder-style CSS, QR generator, sidebar inject.js
+dev/smoke-test.py              end-to-end API test against any Jellyfin with the plugin installed
 ```
 
-- Realtime runs over **Server-Sent Events** plus plain POSTs, which works on every mobile browser and reconnects automatically. A reload resumes at the same card.
-- Images are **proxied** through JellySwipe (`/api/img/...`), so browsers never see the Jellyfin token.
-- Lobbies are in memory and expire after 6 hours of inactivity. A restart ends running games.
-- Each player gets a random secret stored in `localStorage`. Only the host can start, kick or restart.
+- **Auth:** hosts send their normal Jellyfin token, taken from Jellyfin web's local storage on the same origin or from the JellySwipe sign-in. It's validated through `IAuthorizationContext`. Guests are identified only by a random per-lobby secret.
+- **Realtime:** Server-Sent Events plus plain POSTs. A reload resumes at the same card.
+- **Images** come straight from Jellyfin's image API.
+- Lobbies live in memory and expire after 6 hours of inactivity. A Jellyfin restart ends running games.
 
 ## Security notes
 
-JellySwipe is meant for a trusted LAN. Anyone who can reach it can create lobbies and send "play" commands to your Jellyfin devices, but only for titles that came out of a game. The Jellyfin login form is only available while no account is connected. Use "switch account" on the home screen to change it. Don't expose it to the internet without an authenticating reverse proxy in front.
+Only signed-in Jellyfin users can create games, and a game only deals titles from libraries the host can access. Anyone who can reach your Jellyfin URL can open `/JellySwipe/` and join a lobby if they know its code (unless guests are disabled). Players in a lobby can send "play" for **results of that lobby** to devices the host is allowed to control.
 
 ## Development
 
 ```bash
-npm run dev                  # node --watch
-node dev/mock-jellyfin.js    # fake Jellyfin on :8096 with generated posters (log in with any user)
-node dev/smoke-test.js       # end-to-end API test against the mock (lobby, matches, undo, solo, auto-play)
-npm run check                # syntax check
+# build (needs the .NET 9 SDK)
+dotnet build Jellyfin.Plugin.JellySwipe -c Release
+
+# throwaway Jellyfin 10.11 with the plugin
+mkdir -p .jf/config/plugins/JellySwipe .jf/media
+cp Jellyfin.Plugin.JellySwipe/bin/Release/net9.0/Jellyfin.Plugin.JellySwipe.dll .jf/config/plugins/JellySwipe/
+docker run -d --name jf-dev -p 8096:8096 --user "$(id -u):$(id -g)" \
+  -v "$PWD/.jf/config:/config" --tmpfs "/cache:uid=$(id -u),gid=$(id -g)" \
+  -v "$PWD/.jf/media:/media:ro" jellyfin/jellyfin:10.11.11
+
+# API smoke test (lobby, matches, undo rules, solo, guest device list)
+JF_URL=http://localhost:8096 JF_USER=admin JF_PASS=... python3 dev/smoke-test.py
+
+# release zip + manifest entry
+./scripts/package.sh        # or push a v* tag and let GitHub Actions build the release
 ```
 
 ## License

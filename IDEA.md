@@ -31,16 +31,17 @@ Original prompt (2026-09-30), lightly cleaned up for typos but otherwise as writ
 
 | Question | Decision | Why |
 |---|---|---|
-| Plugin vs. standalone | **Standalone Node web app** next to Jellyfin, linked from Jellyfin's sidebar via `menuLinks` | A real plugin is C#/.NET inside the Jellyfin process: restarts on every change and awkward realtime lobby state. Standalone = one tiny container, no Jellyfin restart, same LAN. |
+| Plugin vs. standalone | **Native Jellyfin plugin** (C#, .NET 9, Jellyfin 10.11). The web app is embedded and served at `/JellySwipe/`, with a sidebar entry via File Transformation. | Requested explicitly ("I need it as a real Jellyfin plugin"). The first prototype was a standalone Node server (see git history before the plugin commit); the plugin reuses its UI and game rules but talks to Jellyfin internals directly: no token storage, no second service. |
 | Joining a lobby | **4-digit code + QR code** (QR encodes the join URL with the code) | Phones scan the QR from the host's screen; people across the room type 4 digits. |
-| Realtime transport | Server-Sent Events + plain POSTs | Works on every mobile browser, no WebSocket dependency, auto-reconnects. |
+| Realtime transport | Server-Sent Events + plain POSTs | Works on every mobile browser, needs nothing beyond ASP.NET Core inside Jellyfin, auto-reconnects. |
 | What is a "match" | A title **every player** swiped right (or super-liked) | Same as Tinder: mutual yes. |
 | Goal | Host picks **1 / 3 / 5** matches. Game ends when reached, or when everyone has run out of cards (then shows the closest calls). | Matches the prompt. |
 | Solo mode | No matches; your right-swipes count toward the goal and become your picks | "Matches don't exist" in solo. |
 | Deck order | Same shuffled deck for everyone in a room | Converges on matches much faster than independent random decks. |
 | Series | For TV series, "Play" starts Next Up (or S1E1) | Makes "play the winner" useful for shows too. |
 | Play on device | Host picks any Jellyfin client that supports remote control (TV app, web, Android TV…) → `PlayNow` | Uses Jellyfin's Sessions API. |
-| Auth | Host logs in to Jellyfin once in the app (token saved in `data/auth.json`), or `JELLYFIN_API_KEY` via env | Players never need Jellyfin accounts. |
+| Auth | Hosts = signed-in Jellyfin users (their existing Jellyfin web session is reused automatically). Guests join with just a name. | Library permissions are respected per host; friends don't need accounts (can be disabled in plugin settings). |
+| Sidebar entry | `inject.js` added to jellyfin-web's `index.html` through the File Transformation plugin (optional, via reflection) | That's the standard non-destructive way for plugins to extend jellyfin-web; without it JellySwipe still works at `/JellySwipe/`. |
 
 ## Tinder look & feel checklist
 

@@ -1,0 +1,13 @@
+[
+  {
+    "guid": "f45261b7-3337-4bcb-97f4-3c8c54a4cfee",
+    "name": "JellySwipe",
+    "description": "Pick libraries and genres, open a lobby (4-digit code + QR), and everyone swipes on their phone. The first titles everyone swiped right on win, and JellySwipe can start the winner on any Jellyfin device. Guests don't need a Jellyfin account.",
+    "overview": "Tinder-style swiping over your library until everyone matches",
+    "owner": "marceljhuber",
+    "category": "General",
+    "imageUrl": "https://raw.githubusercontent.com/marceljhuber/jellyswipe/main/Jellyfin.Plugin.JellySwipe/Web/icon.svg",
+    "changelog": "First release: lobbies with code + QR, Tinder-style swiping, matches, solo mode, play/auto-play on Jellyfin devices, sidebar entry via File Transformation.",
+    "versions": []
+  }
+]

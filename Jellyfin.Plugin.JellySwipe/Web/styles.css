@@ -159,7 +159,7 @@ a { color: inherit; }
 .lobby-code .label { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
 .lobby-code .digits { font-size: 64px; font-weight: 900; letter-spacing: 10px; margin: 2px 0 0 10px; background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; line-height: 1.1; }
 .qr { margin: 12px auto 4px; width: 200px; height: 200px; padding: 10px; border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
-.qr img { width: 100%; height: 100%; display: block; }
+.qr img, .qr svg { width: 100%; height: 100%; display: block; }
 .share-row { display: flex; justify-content: center; gap: 8px; margin: 10px 0 0; }
 .pill-btn { flex-shrink: 0; padding: 8px 14px; border-radius: 999px; background: var(--surface); font-weight: 800; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
 .pill-btn svg { width: 16px; height: 16px; }

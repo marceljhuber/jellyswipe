@@ -2,3 +2,9 @@ node_modules/
 data/
 .env
 *.log
+bin/
+obj/
+*.zip
+build/
+dist/
+.jf/

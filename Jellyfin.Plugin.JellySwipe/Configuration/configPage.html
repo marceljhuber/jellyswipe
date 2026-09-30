@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JellySwipe</title>
+</head>
+<body>
+    <div id="JellySwipeConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="JellySwipeConfigForm">
+                    <div class="verticalSection verticalSection-extrabottompadding">
+                        <div class="sectionTitleContainer flex align-items-center">
+                            <h2 class="sectionTitle">JellySwipe</h2>
+                            <a is="emby-linkbutton" class="raised button-alt headerHelpButton" target="_blank" href="../JellySwipe/">Open JellySwipe</a>
+                        </div>
+                        <p>Swipe through your library with friends, Tinder-style. Open it at <code>/JellySwipe/</code> on this server.</p>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="AllowGuests" type="checkbox" is="emby-checkbox" />
+                            <span>Allow guests without a Jellyfin account</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Guests join a lobby with the 4-digit code or QR code. Only signed-in users can host games.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="ShowInSidebar" type="checkbox" is="emby-checkbox" />
+                            <span>Show JellySwipe in the sidebar</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Requires the <b>File Transformation</b> plugin. Takes effect after a browser reload.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input id="AutoPlayDelaySeconds" type="number" is="emby-input" min="3" max="60" label="Auto-play countdown (seconds)" />
+                    </div>
+                    <div class="inputContainer">
+                        <input id="MaxDeckSize" type="number" is="emby-input" min="20" max="2000" label="Maximum cards per game" />
+                    </div>
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button"><span>Save</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var JellySwipeConfig = { pluginUniqueId: 'f45261b7-3337-4bcb-97f4-3c8c54a4cfee' };
+            document.querySelector('#JellySwipeConfigPage').addEventListener('pageshow', function () {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(JellySwipeConfig.pluginUniqueId).then(function (config) {
+                    document.querySelector('#AllowGuests').checked = config.AllowGuests;
+                    document.querySelector('#ShowInSidebar').checked = config.ShowInSidebar;
+                    document.querySelector('#AutoPlayDelaySeconds').value = config.AutoPlayDelaySeconds;
+                    document.querySelector('#MaxDeckSize').value = config.MaxDeckSize;
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+            document.querySelector('#JellySwipeConfigForm').addEventListener('submit', function (e) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(JellySwipeConfig.pluginUniqueId).then(function (config) {
+                    config.AllowGuests = document.querySelector('#AllowGuests').checked;
+                    config.ShowInSidebar = document.querySelector('#ShowInSidebar').checked;
+                    config.AutoPlayDelaySeconds = parseInt(document.querySelector('#AutoPlayDelaySeconds').value, 10) || 10;
+                    config.MaxDeckSize = parseInt(document.querySelector('#MaxDeckSize').value, 10) || 400;
+                    ApiClient.updatePluginConfiguration(JellySwipeConfig.pluginUniqueId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+                e.preventDefault();
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>

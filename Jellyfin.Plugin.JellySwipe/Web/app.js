@@ -30,14 +30,29 @@ const I = {
 const logo = `<span class="logo">${I.flame}<span>jellyswipe</span></span>`;
 
 // ---------- API ----------
+// Hosts use their Jellyfin token: either the Jellyfin web session on this origin, or our own login.
+function jellyfinToken() {
+  const own = store.get('token');
+  if (own) return own;
+  try {
+    const creds = JSON.parse(localStorage.getItem('jellyfin_credentials') || '{}');
+    const servers = (creds.Servers || []).filter((x) => x.AccessToken).sort((x, y) => (y.DateLastAccessed || 0) - (x.DateLastAccessed || 0));
+    return servers[0]?.AccessToken || null;
+  } catch { return null; }
+}
+
 async function api(path, body, method) {
-  const opts = body !== undefined ? { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
-  const res = await fetch(`api/${path}`, opts);
+  const headers = {};
+  const token = jellyfinToken();
+  if (token) headers.Authorization = `MediaBrowser Token="${token}"`;
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const res = await fetch(`api/${path}`, body !== undefined ? { method: method || 'POST', headers, body: JSON.stringify(body) } : { headers });
   const data = res.headers.get('content-type')?.includes('json') ? await res.json() : null;
   if (!res.ok) throw Object.assign(new Error(data?.error || `Request failed (${res.status})`), { status: res.status });
   return data;
 }
-const img = (id, ref = 'Primary/0', w = 720) => `api/img/${id}/${ref}?w=${w}`;
+// Jellyfin serves images anonymously; the app lives at <server>/JellySwipe/.
+const img = (id, ref = 'Primary/0', w = 720) => `../Items/${id}/Images/${ref}?fillWidth=${w}&quality=85`;
 
 let toastTimer;
 function toast(msg) {
@@ -77,7 +92,7 @@ function subline(it) {
 
 // ---------- Router ----------
 async function boot() {
-  try { S.jf = await api('status'); } catch { S.jf = { connected: false }; }
+  try { S.jf = await api('status'); } catch { S.jf = { user: null, allowGuests: true }; }
   if (S.session) return connectRoom(S.session);
   route();
 }
@@ -88,7 +103,6 @@ function route() {
     if (S.room.status === 'playing') return show('game', renderGame);
     return show('results', renderResults);
   }
-  if (!S.jf?.connected) return show('connect', renderConnect);
   return show('home', renderHome);
 }
 
@@ -98,56 +112,64 @@ function show(name, fn) {
   fn(same);
 }
 
-// ---------- Connect to Jellyfin ----------
-function renderConnect() {
+// ---------- Sign in (only needed when not already signed in to Jellyfin web in this browser) ----------
+function deviceId() {
+  let id = store.get('deviceId');
+  if (!id) { id = crypto.randomUUID?.() || String(Math.random()).slice(2); store.set('deviceId', id); }
+  return id;
+}
+
+function renderLogin() {
   app.innerHTML = `
     <div class="screen">
+      <div class="topbar"><div class="side"><button class="icon-btn" id="back" aria-label="Back">${I.back}</button></div>${logo}<div class="side"></div></div>
       <div class="scroll">
         <div class="hero">
           <div>${I.flame.replace('<svg', '<svg class="big-logo"')}</div>
-          <h1>Connect Jellyfin</h1>
-          <p>Log in once with a Jellyfin account. Players never need one.</p>
+          <h1>Sign in to host</h1>
+          <p>Use your Jellyfin account. Friends who join don't need one.</p>
         </div>
         <form class="stack" id="f" style="margin-top:24px" autocomplete="on">
-          <div class="field"><label>Server URL</label><input class="input" name="url" inputmode="url" placeholder="http://192.168.1.10:8096" value="${esc(S.jf?.serverUrl || '')}" required></div>
-          <div class="hint" id="probe"></div>
-          <div class="field"><label>Username</label><input class="input" name="username" autocomplete="username" required></div>
+          <div class="field"><label>Username</label><input class="input" name="username" autocomplete="username" autocapitalize="off" required></div>
           <div class="field"><label>Password</label><input class="input" name="password" type="password" autocomplete="current-password"></div>
           <div class="error" id="err"></div>
-          <button class="btn btn-primary" type="submit">Connect</button>
+          <button class="btn btn-primary" type="submit">Sign in</button>
+          <a class="btn btn-ghost" href="../web/" style="text-decoration:none">Open Jellyfin instead</a>
         </form>
       </div>
     </div>`;
+  $('#back').onclick = () => show('home', renderHome);
   const f = $('#f');
-  const probe = async () => {
-    const url = f.url.value.trim();
-    if (!url) return;
-    $('#probe').textContent = 'Checking…';
-    try {
-      const info = await api(`probe?url=${encodeURIComponent(url)}`);
-      $('#probe').textContent = `✓ ${info.ServerName} · Jellyfin ${info.Version}`;
-    } catch { $('#probe').textContent = '⚠ No Jellyfin server answered at that URL'; }
-  };
-  f.url.addEventListener('change', probe);
-  if (f.url.value) probe();
   f.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = f.querySelector('button');
     btn.disabled = true;
     $('#err').textContent = '';
     try {
-      S.jf = await api('login', { url: f.url.value, username: f.username.value, password: f.password.value });
-      route();
+      const res = await fetch('../Users/AuthenticateByName', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `MediaBrowser Client="JellySwipe", Device="${navigator.userAgent.includes('Mobile') ? 'Phone' : 'Browser'}", DeviceId="${deviceId()}", Version="1.0"`,
+        },
+        body: JSON.stringify({ Username: f.username.value, Pw: f.password.value }),
+      });
+      if (!res.ok) throw new Error(res.status === 401 ? 'Wrong username or password' : `Sign-in failed (${res.status})`);
+      const data = await res.json();
+      store.set('token', data.AccessToken);
+      S.jf = await api('status');
+      show('home', renderHome);
     } catch (err) {
       $('#err').textContent = err.message;
       btn.disabled = false;
     }
   });
+  f.username.focus();
 }
 
 // ---------- Home ----------
 function renderHome() {
-  const name = store.get('name', '');
+  const name = store.get('name', '') || S.jf?.user || '';
   app.innerHTML = `
     <div class="screen">
       <div class="topbar"><div class="side"></div>${logo}<div class="side"></div></div>
@@ -159,14 +181,14 @@ function renderHome() {
         </div>
         <div class="stack" style="margin-top:28px">
           <div class="field"><label>Your name</label><input class="input" id="name" maxlength="20" placeholder="e.g. Alex" value="${esc(name)}" autocomplete="nickname"></div>
-          <button class="btn btn-primary" id="create">Create game</button>
+          ${S.jf?.user ? '<button class="btn btn-primary" id="create">Create game</button>' : '<button class="btn btn-primary" id="signin">Sign in to host a game</button>'}
           <div class="divider">or join a lobby</div>
           <input class="input code-input" id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="····" value="${esc(joinParam || '')}" autocomplete="off">
           <div class="error" id="err"></div>
           <button class="btn btn-outline" id="join">Join</button>
         </div>
       </div>
-      <div class="sticky-footer hint">Connected as <b>${esc(S.jf.userName)}</b>${S.jf.canLogout ? ' · <a href="#" id="logout">switch account</a>' : ''}</div>
+      <div class="sticky-footer hint">${S.jf?.user ? `Signed in as <b>${esc(S.jf.user)}</b>${store.get('token') ? ' · <a href="#" id="logout">sign out</a>' : ''}` : 'Joining a lobby needs no account'} · <a href="../web/">Jellyfin</a></div>
     </div>`;
   const nameEl = $('#name');
   const codeEl = $('#code');
@@ -176,7 +198,8 @@ function renderHome() {
     store.set('name', n);
     return n;
   };
-  $('#create').onclick = () => { if (needName()) show('create', renderCreate); };
+  $('#create')?.addEventListener('click', () => { if (needName()) show('create', renderCreate); });
+  $('#signin')?.addEventListener('click', () => { needName(); show('login', renderLogin); });
   const join = async () => {
     const n = needName();
     if (!n) return;
@@ -196,7 +219,8 @@ function renderHome() {
   });
   $('#logout')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    S.jf = await api('logout', {});
+    store.set('token', null);
+    S.jf = await api('status');
     route();
   });
   if (joinParam && !name) nameEl.focus();
@@ -295,7 +319,7 @@ async function renderCreate() {
     loadGenres();
   } catch (e) {
     $('#libs').innerHTML = `<span class="error">${esc(e.message)}</span>`;
-    if (e.status === 503) { S.jf = await api('status'); route(); }
+    if (e.status === 401) { store.set('token', null); S.jf = await api('status'); route(); }
   }
   try {
     const devices = await api('sessions');
@@ -389,6 +413,15 @@ async function applyState(room) {
 }
 
 // ---------- Lobby ----------
+function qrSvg(text) {
+  try {
+    const qr = window.qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    return qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  } catch { return ''; }
+}
+
 function renderLobby(same) {
   const r = S.room;
   const joinUrl = `${location.origin}${location.pathname}?join=${r.code}`;
@@ -423,7 +456,7 @@ function renderLobby(same) {
       <div class="topbar"><div class="side"><button class="icon-btn" id="leave" aria-label="Leave">${I.close}</button></div>${logo}<div class="side"></div></div>
       <div class="scroll">
         <div class="lobby-code"><div class="label">Lobby code</div><div class="digits">${r.code}</div></div>
-        <div class="qr"><img src="api/qr?text=${encodeURIComponent(joinUrl)}" alt="QR code to join lobby ${r.code}"></div>
+        <div class="qr" role="img" aria-label="QR code to join lobby ${r.code}">${qrSvg(joinUrl)}</div>
         ${isLocal ? '<div class="hint">⚠ Open this page via the server\'s LAN address so phones can use the QR code.</div>' : ''}
         <div class="share-row"><button class="pill-btn" id="share">${I.share} Share invite</button></div>
         <div class="summary">${summary.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
@@ -891,12 +924,12 @@ function renderResults() {
 
 async function openDevicePicker(m) {
   const el = openSheet(`<div class="body"><h3>Play ${esc(m.name)}</h3><div class="hint" style="text-align:left;margin-bottom:14px">${m.type === 'Series' ? 'Starts the next unwatched episode. ' : ''}Pick a device running Jellyfin.</div><div id="devs"><div class="spinner"></div></div>
-    ${S.jf?.publicUrl ? `<a class="btn btn-outline" style="margin-top:8px;text-decoration:none" target="_blank" rel="noopener" href="${esc(S.jf.publicUrl)}/web/#/details?id=${m.id}">${I.external} Open in Jellyfin</a>` : ''}</div>`);
+    <a class="btn btn-outline" style="margin-top:8px;text-decoration:none" target="_blank" rel="noopener" href="../web/#/details?id=${m.id}">${I.external} Open in Jellyfin</a></div>`);
   const load = async () => {
     const box = $('#devs', el);
     box.innerHTML = '<div class="spinner"></div>';
     try {
-      const devices = await api('sessions');
+      const devices = await api(`rooms/${S.room.code}/sessions?secret=${encodeURIComponent(S.session.secret)}`);
       if (!devices.length) {
         box.innerHTML = '<p class="hint">No controllable devices online. Open the Jellyfin app on your TV or phone, then refresh.</p><button class="btn btn-ghost" id="rf">Refresh</button>';
         $('#rf', el).onclick = load;
@@ -916,7 +949,6 @@ async function openDevicePicker(m) {
       }
     } catch (e) { box.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
   };
-  if (!S.jf?.publicUrl) S.jf = await api('status').catch(() => S.jf);
   load();
 }
 

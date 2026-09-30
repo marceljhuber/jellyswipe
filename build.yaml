@@ -1,0 +1,16 @@
+name: "JellySwipe"
+guid: "f45261b7-3337-4bcb-97f4-3c8c54a4cfee"
+version: "0.1.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+owner: "marceljhuber"
+overview: "Tinder-style swiping over your library until everyone matches"
+description: >
+  Pick libraries and genres, open a lobby (4-digit code + QR), and everyone swipes on their phone.
+  The first titles everyone swiped right on win, and JellySwipe can start the winner on any
+  Jellyfin device. Guests don't need a Jellyfin account.
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.JellySwipe.dll"
+changelog: >
+  First release.
