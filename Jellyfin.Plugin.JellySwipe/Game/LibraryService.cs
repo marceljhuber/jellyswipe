@@ -29,6 +29,26 @@ public sealed class LibraryService(
 
     private static readonly BaseItemKind[] SwipeKinds = [BaseItemKind.Movie, BaseItemKind.Series];
 
+    /// <summary>The user anonymous hosts act as: the configured one, else the first administrator.</summary>
+    public User? DefaultHost(string? configuredId)
+    {
+        if (Guid.TryParse(configuredId, out var id) && userManager.GetUserById(id) is { } configured)
+        {
+            return configured;
+        }
+
+        return AllUsers().FirstOrDefault(u => u.HasPermission(PermissionKind.IsAdministrator));
+    }
+
+    // IUserManager.Users (10.11.0) became GetUsers() in later 10.11.x; resolve whichever exists so one build runs on all of 10.11.
+    private IEnumerable<User> AllUsers()
+    {
+        var type = userManager.GetType();
+        var result = type.GetMethod("GetUsers", Type.EmptyTypes)?.Invoke(userManager, null)
+            ?? type.GetProperty("Users")?.GetValue(userManager);
+        return result as IEnumerable<User> ?? [];
+    }
+
     public User GetUser(Guid userId) => userManager.GetUserById(userId) ?? throw new GameException(403, "Host account no longer exists");
 
     private Folder[] Views(User user) =>

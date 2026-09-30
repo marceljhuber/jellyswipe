@@ -5,7 +5,7 @@
     <title>JellySwipe</title>
 </head>
 <body>
-    <div id="JellySwipeConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+    <div id="JellySwipeConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-select">
         <div data-role="content">
             <div class="content-primary">
                 <form id="JellySwipeConfigForm">
@@ -22,6 +22,16 @@
                             <span>Allow guests without a Jellyfin account</span>
                         </label>
                         <div class="fieldDescription checkboxFieldDescription">Guests join a lobby with the 4-digit code or QR code. Only signed-in users can host games.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label class="emby-checkbox-label">
+                            <input id="AllowAnonymousHosts" type="checkbox" is="emby-checkbox" />
+                            <span>Allow hosting without signing in</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">Anyone who opens JellySwipe can create games without a Jellyfin login. They use the libraries, watch state and devices of the user below. Signed-in users always host as themselves.</div>
+                    </div>
+                    <div class="selectContainer">
+                        <select is="emby-select" id="DefaultHostUserId" label="Host games as"></select>
                     </div>
                     <div class="checkboxContainer checkboxContainer-withDescription">
                         <label class="emby-checkbox-label">
@@ -46,7 +56,14 @@
             var JellySwipeConfig = { pluginUniqueId: 'f45261b7-3337-4bcb-97f4-3c8c54a4cfee' };
             document.querySelector('#JellySwipeConfigPage').addEventListener('pageshow', function () {
                 Dashboard.showLoadingMsg();
-                ApiClient.getPluginConfiguration(JellySwipeConfig.pluginUniqueId).then(function (config) {
+                Promise.all([ApiClient.getPluginConfiguration(JellySwipeConfig.pluginUniqueId), ApiClient.getUsers()]).then(function (res) {
+                    var config = res[0];
+                    var select = document.querySelector('#DefaultHostUserId');
+                    select.innerHTML = '<option value="">First administrator</option>' + res[1].map(function (u) {
+                        return '<option value="' + u.Id + '">' + u.Name.replace(/</g, '&lt;') + '</option>';
+                    }).join('');
+                    select.value = config.DefaultHostUserId || '';
+                    document.querySelector('#AllowAnonymousHosts').checked = config.AllowAnonymousHosts;
                     document.querySelector('#AllowGuests').checked = config.AllowGuests;
                     document.querySelector('#ShowInSidebar').checked = config.ShowInSidebar;
                     document.querySelector('#AutoPlayDelaySeconds').value = config.AutoPlayDelaySeconds;
@@ -58,6 +75,8 @@
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(JellySwipeConfig.pluginUniqueId).then(function (config) {
                     config.AllowGuests = document.querySelector('#AllowGuests').checked;
+                    config.AllowAnonymousHosts = document.querySelector('#AllowAnonymousHosts').checked;
+                    config.DefaultHostUserId = document.querySelector('#DefaultHostUserId').value;
                     config.ShowInSidebar = document.querySelector('#ShowInSidebar').checked;
                     config.AutoPlayDelaySeconds = parseInt(document.querySelector('#AutoPlayDelaySeconds').value, 10) || 10;
                     config.MaxDeckSize = parseInt(document.querySelector('#MaxDeckSize').value, 10) || 400;

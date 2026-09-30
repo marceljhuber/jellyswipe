@@ -231,6 +231,8 @@ public sealed class RoomManager : IDisposable
             {
                 p.Position = 0;
                 p.History.Clear();
+                p.Order = Shuffled(deck.Count);
+                p.OrderIndex = p.Order.Select((deckIdx, pos) => (deck[deckIdx].Id, pos)).ToDictionary(x => x.Id, x => x.pos);
             }
 
             CancelAutoPlayLocked(room);
@@ -362,7 +364,7 @@ public sealed class RoomManager : IDisposable
                 throw new GameException(400, "Bad choice");
             }
 
-            if (itemId is null || !room.DeckIndex.TryGetValue(itemId, out var idx))
+            if (itemId is null || !player.OrderIndex.TryGetValue(itemId, out var idx))
             {
                 throw new GameException(400, "Unknown title");
             }
@@ -415,7 +417,7 @@ public sealed class RoomManager : IDisposable
                 votes.Remove(player.Id);
             }
 
-            player.Position = room.DeckIndex[last.ItemId];
+            player.Position = player.OrderIndex[last.ItemId];
             Broadcast(room);
             return last.ItemId;
         }
@@ -513,13 +515,26 @@ public sealed class RoomManager : IDisposable
 
     // ---------------------------------------------------------------- views & events
 
+    /// <summary>Returns the deck in this player's own order.</summary>
     public IReadOnlyList<DeckItem> Deck(string code, string? secret)
     {
-        Authenticate(code, secret, out var room);
+        var player = Authenticate(code, secret, out var room);
         lock (room.Sync)
         {
-            return room.Deck;
+            return player.Order.Length == room.Deck.Count ? player.Order.Select(i => room.Deck[i]).ToList() : room.Deck;
         }
+    }
+
+    private static int[] Shuffled(int count)
+    {
+        var order = Enumerable.Range(0, count).ToArray();
+        for (var i = order.Length - 1; i > 0; i--)
+        {
+            var j = RandomNumberGenerator.GetInt32(i + 1);
+            (order[i], order[j]) = (order[j], order[i]);
+        }
+
+        return order;
     }
 
     public object Summary(string code)

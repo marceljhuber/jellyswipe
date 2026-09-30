@@ -3,7 +3,7 @@
 **Tinder for your Jellyfin library, as a native Jellyfin plugin.** Pick libraries and genres, open a lobby, and everyone swipes on their phone. The first titles *everyone* swiped right on win, and JellySwipe can start the winner on your TV automatically.
 
 - 🃏 Tinder-style cards: drag with rotation, LIKE / NOPE / SUPER LIKE stamps, tap to flip poster ↔ backdrops, rewind, "It's a Match!" celebration
-- 👥 Lobbies with a **4-digit code + QR code**. Guests join **without a Jellyfin account**.
+- 👥 Lobbies with a **4-digit code + QR code**. Nobody needs to log in: guests just type a name, and hosts without a Jellyfin session host as a user you pick.
 - 🎯 Goal of **1, 3 or 5 matches**. Solo mode turns right-swipes into your personal picks.
 - 📺 **Play on any Jellyfin device** you can control (Android TV, web, mobile…). Series start at the first unwatched episode and keep going.
 - ⏱ Optional **auto-play of the winner** with a cancellable countdown
@@ -37,8 +37,8 @@ unzip jellyswipe_0.1.0.0.zip -d /config/plugins/JellySwipe_0.1.0.0
 ## Use it
 
 - **Open:** the flame button in Jellyfin's header, **JellySwipe** in the sidebar, or `https://<your-jellyfin>/JellySwipe/`.
-- **Host:** if you're signed in to Jellyfin in that browser you're recognised automatically; otherwise sign in on the JellySwipe page. You only see libraries your account can access.
-- **Guests:** scan the lobby QR code or open `/JellySwipe/` and type the 4-digit code. No account needed. This can be turned off in the plugin settings.
+- **Host:** no login needed. If you're signed in to Jellyfin in that browser, you host as yourself. Otherwise you host as the *default host user* from the plugin settings (by default the first administrator).
+- **Guests:** scan the lobby QR code or open `/JellySwipe/` and type the 4-digit code. "Share invite" copies the link, even on plain-http LAN setups, and opens the phone's share sheet where available.
 - **Play:** tap ▶ on any result and pick a device, or choose an auto-play device when creating the game. Devices appear while a Jellyfin app is open on them.
 
 ### Settings (Dashboard → Plugins → JellySwipe)
@@ -46,6 +46,8 @@ unzip jellyswipe_0.1.0.0.zip -d /config/plugins/JellySwipe_0.1.0.0
 | Setting | Default |
 |---|---|
 | Allow guests without a Jellyfin account | on |
+| Allow hosting without signing in | on |
+| Host games as (for people not signed in) | first administrator |
 | Show JellySwipe in the sidebar (needs File Transformation) | on |
 | Auto-play countdown | 10 s |
 | Maximum cards per game | 400 |
@@ -54,7 +56,7 @@ unzip jellyswipe_0.1.0.0.zip -d /config/plugins/JellySwipe_0.1.0.0
 
 1. **Create:** pick libraries (movies / shows / collections / home videos), optional genres, the match goal, "only unwatched", and optionally an auto-play device.
 2. **Lobby:** friends join by QR code or lobby code. With one player the host's button says *Play solo*.
-3. **Swipe:** everyone gets the **same shuffled deck**, so matches happen quickly. A match is a title every player in the lobby liked or super-liked.
+3. **Swipe:** everyone gets the **same set of cards, each in their own random order**. A match is a title every player in the lobby liked or super-liked.
 4. **Finish:** when the goal is reached, everyone sees the celebration and the ranked results (super-likes rank first, then match order). If the deck runs out first, you get the matches so far plus the *closest calls*.
 
 ## Architecture
@@ -71,14 +73,14 @@ Jellyfin.Plugin.JellySwipe/
 dev/smoke-test.py              end-to-end API test against any Jellyfin with the plugin installed
 ```
 
-- **Auth:** hosts send their normal Jellyfin token, taken from Jellyfin web's local storage on the same origin or from the JellySwipe sign-in. It's validated through `IAuthorizationContext`. Guests are identified only by a random per-lobby secret.
+- **Auth:** if Jellyfin web is signed in on the same origin, its token is sent along and validated through `IAuthorizationContext`. Otherwise the configured default host user is used. Guests are identified only by a random per-lobby secret.
 - **Realtime:** Server-Sent Events plus plain POSTs. A reload resumes at the same card.
 - **Images** come straight from Jellyfin's image API.
 - Lobbies live in memory and expire after 6 hours of inactivity. A Jellyfin restart ends running games.
 
 ## Security notes
 
-Only signed-in Jellyfin users can create games, and a game only deals titles from libraries the host can access. Anyone who can reach your Jellyfin URL can open `/JellySwipe/` and join a lobby if they know its code (unless guests are disabled). Players in a lobby can send "play" for **results of that lobby** to devices the host is allowed to control.
+By default anyone who can reach JellySwipe can host games as the default host user, including playing on that user's devices. If your Jellyfin is reachable from outside your home, turn off *Allow hosting without signing in*, or pick a restricted user as the default host. A game only deals titles from libraries the host user can access. Anyone who can reach your Jellyfin URL can open `/JellySwipe/` and join a lobby if they know its code (unless guests are disabled). Players in a lobby can send "play" for **results of that lobby** to devices the host is allowed to control.
 
 ## Development
 

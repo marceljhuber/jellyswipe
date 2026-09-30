@@ -37,10 +37,10 @@ Original prompt (2026-09-30), lightly cleaned up for typos but otherwise as writ
 | What is a "match" | A title **every player** swiped right (or super-liked) | Same as Tinder: mutual yes. |
 | Goal | Host picks **1 / 3 / 5** matches. Game ends when reached, or when everyone has run out of cards (then shows the closest calls). | Matches the prompt. |
 | Solo mode | No matches; your right-swipes count toward the goal and become your picks | "Matches don't exist" in solo. |
-| Deck order | Same shuffled deck for everyone in a room | Converges on matches much faster than independent random decks. |
+| Deck order | Same set of cards for everyone, **each player in their own random order** | Changed after first use (2026-09-30): an identical order felt predictable and made players influence each other. |
 | Series | For TV series, "Play" starts Next Up (or S1E1) | Makes "play the winner" useful for shows too. |
 | Play on device | Host picks any Jellyfin client that supports remote control (TV app, web, Android TV…) → `PlayNow` | Uses Jellyfin's Sessions API. |
-| Auth | Hosts = signed-in Jellyfin users (their existing Jellyfin web session is reused automatically). Guests join with just a name. | Library permissions are respected per host; friends don't need accounts (can be disabled in plugin settings). |
+| Auth | **No login screen.** A Jellyfin web session in the same browser is reused; otherwise people host as a configurable default user (first admin by default). Guests join with just a name. | Feedback after first use: "it asked me username and password, remove that". Both can be restricted in the plugin settings. |
 | Sidebar entry | `inject.js` added to jellyfin-web's `index.html` through the File Transformation plugin (optional, via reflection) | That's the standard non-destructive way for plugins to extend jellyfin-web; without it JellySwipe still works at `/JellySwipe/`. |
 
 ## Tinder look & feel checklist

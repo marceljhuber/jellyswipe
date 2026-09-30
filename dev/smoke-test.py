@@ -53,8 +53,11 @@ def logout(token):
 def main():
     page = urllib.request.urlopen(f"{URL}/JellySwipe/", timeout=10).read().decode()
     assert "app.js" in page, "web app not served"
-    assert req("status")["user"] is None, "anonymous status should have no user"
-    req("libraries", expect=401)
+    anon = req("status")
+    assert anon["user"] is None, "anonymous status should have no user"
+    print("anonymous visitors host as:", anon.get("host"))
+    if not anon.get("host"):
+        req("libraries", expect=401)
 
     token = login()
     try:
@@ -78,7 +81,9 @@ def main():
         req(f"rooms/{code}/join", {"name": "Late"}, expect=409)
         deck = req(f"rooms/{code}/deck?secret={hs}")["deck"]
         deck2 = req(f"rooms/{code}/deck?secret={guest['secret']}")["deck"]
-        assert [d["id"] for d in deck] == [d["id"] for d in deck2], "decks differ"
+        assert sorted(d["id"] for d in deck) == sorted(d["id"] for d in deck2), "players must get the same cards"
+        if len(deck) > 3:
+            assert [d["id"] for d in deck] != [d["id"] for d in deck2], "each player should get their own order"
         print(f"deck: {len(deck)} cards, first: {deck[0]['name']} ({deck[0]['type']}, {deck[0]['images']})")
 
         req(f"rooms/{code}/swipe", {"secret": hs, "itemId": deck[0]["id"], "choice": "like"})

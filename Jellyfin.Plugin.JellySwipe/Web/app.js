@@ -11,7 +11,7 @@ const vibrate = (p) => { try { navigator.vibrate?.(p); } catch { /* unsupported 
 
 // ---------- Icons ----------
 const I = {
-  flame: '<svg viewBox="0 0 64 64"><defs><linearGradient id="fg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#fd267a"/><stop offset="1" stop-color="#ff7854"/></linearGradient></defs><path fill="url(#fg)" d="M33.5 4c1.2 8.6-3.1 13.6-7.4 18.3C22 26.7 17.4 31.1 17.4 39c0 10.1 6.4 18.5 14.8 18.5 9 0 15-7.6 15-16.2 0-6.3-2.7-11.1-5.7-14.6-.5 4.3-2.6 7.5-5.5 8.7 1.6-5.5 1.8-11.1-.2-16.7C34.4 14.4 33.6 9.4 33.5 4Z"/></svg>',
+  flame: '<svg viewBox="0 0 24 24"><defs><linearGradient id="fg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#fd267a"/><stop offset="1" stop-color="#ff7854"/></linearGradient></defs><path fill="url(#fg)" d="M8.2 9.1c.1 1.8.9 3.1 2.1 3.5-.5-3.6 1.2-7.1 4.6-9.3-.3 2.5.6 4.4 2.2 6.1 1.5 1.6 2.6 3.4 2.6 5.9 0 4.2-3.4 7.2-7.7 7.2S4.3 19.6 4.3 15.5c0-2.8 1.5-5 3.9-6.4Z"/></svg>',
   nope: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M14.83 12l6.58-6.59a2 2 0 1 0-2.82-2.82L12 9.17 5.41 2.59a2 2 0 1 0-2.82 2.82L9.17 12l-6.58 6.59a2 2 0 1 0 2.82 2.82L12 14.83l6.59 6.58a2 2 0 0 0 2.82-2.82z"/></svg>',
   like: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.6c-.4 0-.8-.1-1.1-.4C5.2 16.3 1.5 13 1.5 8.6 1.5 5.3 4 2.8 7.2 2.8c1.9 0 3.6.9 4.8 2.4 1.2-1.5 2.9-2.4 4.8-2.4 3.2 0 5.7 2.5 5.7 5.8 0 4.4-3.7 7.7-9.4 12.6-.3.3-.7.4-1.1.4z"/></svg>',
   star: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>',
@@ -32,8 +32,6 @@ const logo = `<span class="logo">${I.flame}<span>jellyswipe</span></span>`;
 // ---------- API ----------
 // Hosts use their Jellyfin token: either the Jellyfin web session on this origin, or our own login.
 function jellyfinToken() {
-  const own = store.get('token');
-  if (own) return own;
   try {
     const creds = JSON.parse(localStorage.getItem('jellyfin_credentials') || '{}');
     const servers = (creds.Servers || []).filter((x) => x.AccessToken).sort((x, y) => (y.DateLastAccessed || 0) - (x.DateLastAccessed || 0));
@@ -112,61 +110,6 @@ function show(name, fn) {
   fn(same);
 }
 
-// ---------- Sign in (only needed when not already signed in to Jellyfin web in this browser) ----------
-function deviceId() {
-  let id = store.get('deviceId');
-  if (!id) { id = crypto.randomUUID?.() || String(Math.random()).slice(2); store.set('deviceId', id); }
-  return id;
-}
-
-function renderLogin() {
-  app.innerHTML = `
-    <div class="screen">
-      <div class="topbar"><div class="side"><button class="icon-btn" id="back" aria-label="Back">${I.back}</button></div>${logo}<div class="side"></div></div>
-      <div class="scroll">
-        <div class="hero">
-          <div>${I.flame.replace('<svg', '<svg class="big-logo"')}</div>
-          <h1>Sign in to host</h1>
-          <p>Use your Jellyfin account. Friends who join don't need one.</p>
-        </div>
-        <form class="stack" id="f" style="margin-top:24px" autocomplete="on">
-          <div class="field"><label>Username</label><input class="input" name="username" autocomplete="username" autocapitalize="off" required></div>
-          <div class="field"><label>Password</label><input class="input" name="password" type="password" autocomplete="current-password"></div>
-          <div class="error" id="err"></div>
-          <button class="btn btn-primary" type="submit">Sign in</button>
-          <a class="btn btn-ghost" href="../web/" style="text-decoration:none">Open Jellyfin instead</a>
-        </form>
-      </div>
-    </div>`;
-  $('#back').onclick = () => show('home', renderHome);
-  const f = $('#f');
-  f.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = f.querySelector('button');
-    btn.disabled = true;
-    $('#err').textContent = '';
-    try {
-      const res = await fetch('../Users/AuthenticateByName', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `MediaBrowser Client="JellySwipe", Device="${navigator.userAgent.includes('Mobile') ? 'Phone' : 'Browser'}", DeviceId="${deviceId()}", Version="1.0"`,
-        },
-        body: JSON.stringify({ Username: f.username.value, Pw: f.password.value }),
-      });
-      if (!res.ok) throw new Error(res.status === 401 ? 'Wrong username or password' : `Sign-in failed (${res.status})`);
-      const data = await res.json();
-      store.set('token', data.AccessToken);
-      S.jf = await api('status');
-      show('home', renderHome);
-    } catch (err) {
-      $('#err').textContent = err.message;
-      btn.disabled = false;
-    }
-  });
-  f.username.focus();
-}
-
 // ---------- Home ----------
 function renderHome() {
   const name = store.get('name', '') || S.jf?.user || '';
@@ -181,14 +124,14 @@ function renderHome() {
         </div>
         <div class="stack" style="margin-top:28px">
           <div class="field"><label>Your name</label><input class="input" id="name" maxlength="20" placeholder="e.g. Alex" value="${esc(name)}" autocomplete="nickname"></div>
-          ${S.jf?.user ? '<button class="btn btn-primary" id="create">Create game</button>' : '<button class="btn btn-primary" id="signin">Sign in to host a game</button>'}
+          ${S.jf?.host ? '<button class="btn btn-primary" id="create">Create game</button>' : '<a class="btn btn-primary" href="../web/" style="text-decoration:none">Sign in to Jellyfin to host</a>'}
           <div class="divider">or join a lobby</div>
           <input class="input code-input" id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="····" value="${esc(joinParam || '')}" autocomplete="off">
           <div class="error" id="err"></div>
           <button class="btn btn-outline" id="join">Join</button>
         </div>
       </div>
-      <div class="sticky-footer hint">${S.jf?.user ? `Signed in as <b>${esc(S.jf.user)}</b>${store.get('token') ? ' · <a href="#" id="logout">sign out</a>' : ''}` : 'Joining a lobby needs no account'} · <a href="../web/">Jellyfin</a></div>
+      <div class="sticky-footer hint">${S.jf?.host ? `Hosting as <b>${esc(S.jf.host)}</b>` : 'Joining a lobby needs no account'} · <a href="../web/">Jellyfin</a></div>
     </div>`;
   const nameEl = $('#name');
   const codeEl = $('#code');
@@ -199,7 +142,7 @@ function renderHome() {
     return n;
   };
   $('#create')?.addEventListener('click', () => { if (needName()) show('create', renderCreate); });
-  $('#signin')?.addEventListener('click', () => { needName(); show('login', renderLogin); });
+
   const join = async () => {
     const n = needName();
     if (!n) return;
@@ -216,12 +159,6 @@ function renderHome() {
     codeEl.value = codeEl.value.replace(/\D/g, '').slice(0, 4);
     $('#err').textContent = '';
     if (codeEl.value.length === 4 && nameEl.value.trim()) join();
-  });
-  $('#logout')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    store.set('token', null);
-    S.jf = await api('status');
-    route();
   });
   if (joinParam && !name) nameEl.focus();
 }
@@ -319,7 +256,7 @@ async function renderCreate() {
     loadGenres();
   } catch (e) {
     $('#libs').innerHTML = `<span class="error">${esc(e.message)}</span>`;
-    if (e.status === 401) { store.set('token', null); S.jf = await api('status'); route(); }
+    if (e.status === 401) { S.jf = await api('status'); route(); }
   }
   try {
     const devices = await api('sessions');
@@ -413,6 +350,24 @@ async function applyState(room) {
 }
 
 // ---------- Lobby ----------
+// navigator.clipboard needs HTTPS; LAN Jellyfin is usually plain http, so fall back to execCommand.
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch { /* fall through */ }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  ta.remove();
+  return ok;
+}
+
 function qrSvg(text) {
   try {
     const qr = window.qrcode(0, 'M');
@@ -467,10 +422,12 @@ function renderLobby(same) {
     </div>`;
   $('#leave').onclick = leaveRoom;
   $('#share').onclick = async () => {
-    const text = `Join my JellySwipe lobby ${r.code}`;
-    if (navigator.share) { try { await navigator.share({ title: 'JellySwipe', text, url: joinUrl }); return; } catch { /* cancelled */ } }
-    try { await navigator.clipboard.writeText(joinUrl); toast('Invite link copied'); } catch { toast(joinUrl); }
+    const copied = await copyText(joinUrl);
+    toast(copied ? 'Invite link copied ✓' : joinUrl);
+    vibrate(15);
+    if (navigator.share) { try { await navigator.share({ title: 'JellySwipe', text: `Join my JellySwipe lobby ${r.code}`, url: joinUrl }); } catch { /* dismissed */ } }
   };
+  $('.lobby-code').onclick = async () => { if (await copyText(joinUrl)) toast('Invite link copied ✓'); };
   bindLobby();
 }
 

@@ -53,8 +53,11 @@ public sealed class JellySwipeController(
         }
     }
 
+    /// <summary>The signed-in Jellyfin user, or the configured default host when hosting without sign-in is allowed.</summary>
     private async Task<User> RequireUser() =>
-        await CurrentUser().ConfigureAwait(false) ?? throw new GameException(401, "Sign in to Jellyfin to host a game");
+        await CurrentUser().ConfigureAwait(false)
+        ?? (Config.AllowAnonymousHosts ? library.DefaultHost(Config.DefaultHostUserId) : null)
+        ?? throw new GameException(401, "Sign in to Jellyfin to host a game");
 
     // ------------------------------------------------------------------ static web app
 
@@ -94,9 +97,11 @@ public sealed class JellySwipeController(
     public async Task<IActionResult> Status()
     {
         var user = await CurrentUser().ConfigureAwait(false);
+        var host = user ?? (Config.AllowAnonymousHosts ? library.DefaultHost(Config.DefaultHostUserId) : null);
         return JsonOut(new
         {
             user = user?.Username,
+            host = host?.Username,
             allowGuests = Config.AllowGuests,
             sidebar = Config.ShowInSidebar,
         });

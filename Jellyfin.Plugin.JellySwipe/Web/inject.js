@@ -12,7 +12,7 @@
     if (enabled) ensure();
   }).catch(function () { enabled = false; });
 
-  var FLAME = '<svg viewBox="0 0 64 64" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M33.5 4c1.2 8.6-3.1 13.6-7.4 18.3C22 26.7 17.4 31.1 17.4 39c0 10.1 6.4 18.5 14.8 18.5 9 0 15-7.6 15-16.2 0-6.3-2.7-11.1-5.7-14.6-.5 4.3-2.6 7.5-5.5 8.7 1.6-5.5 1.8-11.1-.2-16.7C34.4 14.4 33.6 9.4 33.5 4Z"/></svg>';
+  var FLAME = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M8.2 9.1c.1 1.8.9 3.1 2.1 3.5-.5-3.6 1.2-7.1 4.6-9.3-.3 2.5.6 4.4 2.2 6.1 1.5 1.6 2.6 3.4 2.6 5.9 0 4.2-3.4 7.2-7.7 7.2S4.3 19.6 4.3 15.5c0-2.8 1.5-5 3.9-6.4Z"/></svg>';
 
   function legacyDrawer() {
     var host = document.querySelector('.mainDrawer .customMenuOptions') || document.querySelector('.mainDrawer-scrollContainer');

@@ -92,7 +92,14 @@ internal sealed class Player
 
     public required string Color { get; init; }
 
+    /// <summary>Gets or sets the index in <see cref="Order"/> of the next card to swipe.</summary>
     public int Position { get; set; }
+
+    /// <summary>Gets or sets this player's own shuffled card order (deck indices); everyone gets the same cards in a different order.</summary>
+    public int[] Order { get; set; } = [];
+
+    /// <summary>Gets or sets itemId → index in <see cref="Order"/>.</summary>
+    public Dictionary<string, int> OrderIndex { get; set; } = [];
 
     public List<Swipe> History { get; } = [];
 
