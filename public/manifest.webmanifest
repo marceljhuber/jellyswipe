@@ -1,0 +1,12 @@
+{
+  "name": "JellySwipe",
+  "short_name": "JellySwipe",
+  "description": "Swipe your Jellyfin library together until you match on what to watch.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111418",
+  "theme_color": "#fd267a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
