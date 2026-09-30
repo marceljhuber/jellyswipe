@@ -12,11 +12,13 @@
 
 Runs entirely inside Jellyfin at `https://<your-jellyfin>/JellySwipe/`, with no extra server or container. See [IDEA.md](IDEA.md) for the original idea and design decisions.
 
+▶ **Watch the demo:** [YouTube (1:17)](https://youtu.be/shTgXxoehIY) · [Short](https://youtube.com/shorts/Mt-CdXJU56Y)
+
 <p align="center">
-  <img src="marketing/assets/screenshots/card.png" width="220" alt="Swiping a card">
-  <img src="marketing/assets/screenshots/lobby-2.png" width="220" alt="Lobby with QR code">
-  <img src="marketing/assets/screenshots/match.png" width="220" alt="It's a Match!">
-  <img src="marketing/assets/screenshots/results.png" width="220" alt="Results">
+  <img src="docs/screenshots/card.png" width="220" alt="Swiping a card">
+  <img src="docs/screenshots/lobby-2.png" width="220" alt="Lobby with QR code">
+  <img src="docs/screenshots/match.png" width="220" alt="It's a Match!">
+  <img src="docs/screenshots/results.png" width="220" alt="Results">
 </p>
 
 ## Compatibility
@@ -123,7 +125,6 @@ JF_URL=http://localhost:8096 JF_USER=admin JF_PASS=... python3 dev/smoke-test.py
 ./scripts/package.sh               # or push a v* tag and let GitHub Actions publish the release
 ```
 
-The promo video lives in `marketing/video` (Remotion). `node record/record.mjs <demo-url>` records the real app on emulated phones plus a TV, and `npm run render` renders it.
 
 ## License
 
