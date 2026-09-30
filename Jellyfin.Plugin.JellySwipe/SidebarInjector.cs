@@ -33,8 +33,11 @@ public sealed class SidebarInjector(ILogger<SidebarInjector> logger) : IHostedSe
             var payload = JsonSerializer.Serialize(new Dictionary<string, string?>
             {
                 ["id"] = TransformationId.ToString(),
-                // Regex! An unanchored "index.html" also matches jellyfin-web chunks like "session-login-index-html.*.chunk.js".
-                ["fileNamePattern"] = @"(^|[\\/])index\.html$",
+                // File Transformation groups transformations by this exact string and prefers an exact
+                // path match, so use the same "index.html" key other plugins (Media Bar, Jellyfin Enhanced)
+                // use; a different regex key would never run next to theirs. As a regex it also matches
+                // jellyfin-web chunks like "session-login-index-html.*.chunk.js", hence the HTML check below.
+                ["fileNamePattern"] = "index.html",
                 ["callbackAssembly"] = GetType().Assembly.FullName,
                 ["callbackClass"] = typeof(SidebarInjector).FullName,
                 ["callbackMethod"] = nameof(TransformIndex),
@@ -66,9 +69,12 @@ public sealed class SidebarInjector(ILogger<SidebarInjector> logger) : IHostedSe
             return html;
         }
 
-        // Only ever touch real HTML documents.
+        // Only ever touch the real HTML document, never JS chunks that happen to match.
+        var head = html.TrimStart();
+        var isDocument = head.StartsWith("<!doctype html", StringComparison.OrdinalIgnoreCase)
+            || head.StartsWith("<html", StringComparison.OrdinalIgnoreCase);
         var at = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
-        return at < 0 ? html : html.Insert(at, ScriptTag);
+        return !isDocument || at < 0 ? html : html.Insert(at, ScriptTag);
     }
 
     public sealed class IndexPayload
