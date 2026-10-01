@@ -82,6 +82,20 @@ public sealed class RoomManager : IDisposable
 
     // ---------------------------------------------------------------- lifecycle
 
+    /// <summary>The host's choice, capped by the admin's optional server-wide limit (0 = none).</summary>
+    private static int? EffectiveLimit(int? requested)
+    {
+        int? cap = Config.DeckCap > 0 ? Config.DeckCap : null;
+        int? wanted = requested > 0 ? requested : null;
+        return (wanted, cap) switch
+        {
+            (null, null) => null,
+            (null, _) => cap,
+            (_, null) => wanted,
+            _ => Math.Min(wanted!.Value, cap!.Value),
+        };
+    }
+
     public JoinResponse Create(Guid hostUserId, string? name, GameSettings settings)
     {
         if (settings.LibraryIds.Length == 0)
@@ -99,6 +113,7 @@ public sealed class RoomManager : IDisposable
         }
 
         settings.Goal = settings.Goal is 1 or 3 or 5 ? settings.Goal : 3;
+        settings.DeckLimit = settings.DeckLimit is > 0 ? Math.Min(settings.DeckLimit.Value, 100_000) : null;
         settings.LibraryNames = settings.LibraryNames.Take(20).ToArray();
         settings.GenreNames = settings.GenreNames.Take(30).ToArray();
         if (settings.AutoPlay is { } ap && string.IsNullOrEmpty(ap.DeviceId))
@@ -223,7 +238,7 @@ public sealed class RoomManager : IDisposable
         }
 
         // Building the deck hits the library; do it outside the lock.
-        var deck = _library.BuildDeck(_library.GetUser(room.HostUserId), room.Settings, Math.Clamp(Config.MaxDeckSize, 20, 2000));
+        var deck = _library.BuildDeck(_library.GetUser(room.HostUserId), room.Settings, EffectiveLimit(room.Settings.DeckLimit));
         if (deck.Count == 0)
         {
             throw new GameException(422, "No titles match these filters");

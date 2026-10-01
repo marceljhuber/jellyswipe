@@ -9,7 +9,7 @@
     The 4th version component encodes the target so Jellyfin's catalog picks the right build.
   -->
   <PropertyGroup>
-    <PluginVersion>0.2.0</PluginVersion>
+    <PluginVersion>0.3.0</PluginVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(JellyfinTarget)' == '10.9'">

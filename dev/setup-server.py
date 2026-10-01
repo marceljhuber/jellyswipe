@@ -34,9 +34,12 @@ if "--no-library" in sys.argv:
     print("    server ready (no library)")
     sys.exit(0)
 call("/Library/VirtualFolders?name=Movies&collectionType=movies&paths=%2Fmedia%2Fmovies&refreshLibrary=true", {"LibraryOptions": {}}, token)
-for _ in range(90):
+for i in range(90):
     time.sleep(2)
+    if i in (10, 40):  # some 12.x first boots don't start the initial scan by themselves
+        call("/Library/Refresh", {}, token, method="POST")
     n = call("/Items?recursive=true&includeItemTypes=Movie&hasOverview=true&limit=0", token=token, method="GET")["TotalRecordCount"]
-    if n >= 15:
+    imgs = call("/Items?recursive=true&includeItemTypes=Movie&imageTypes=Primary&limit=0", token=token, method="GET")["TotalRecordCount"]
+    if n >= 15 and imgs >= 15:
         break
-print(f"    server ready, {n} movies with metadata")
+print(f"    server ready, {n} movies with metadata, {imgs} with posters")

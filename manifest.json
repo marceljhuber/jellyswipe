@@ -7,7 +7,7 @@
     "owner": "marceljhuber",
     "category": "General",
     "imageUrl": "https://raw.githubusercontent.com/marceljhuber/jellyswipe/main/Jellyfin.Plugin.JellySwipe/Web/icon.svg",
-    "changelog": "First public release: lobbies with code + QR (no login needed), Tinder-style swiping with per-player order, matches, solo mode, play/auto-play on Jellyfin devices, sidebar entry. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+    "changelog": "0.3.0: choose all titles or a random number of them; plainer, quieter redesign; first card images preload. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
     "versions": [
       {
         "version": "0.2.0.1200",

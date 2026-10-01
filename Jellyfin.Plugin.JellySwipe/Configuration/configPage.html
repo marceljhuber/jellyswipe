@@ -44,7 +44,8 @@
                         <input id="AutoPlayDelaySeconds" type="number" is="emby-input" min="3" max="60" label="Auto-play countdown (seconds)" />
                     </div>
                     <div class="inputContainer">
-                        <input id="MaxDeckSize" type="number" is="emby-input" min="20" max="2000" label="Maximum cards per game" />
+                        <input id="DeckCap" type="number" is="emby-input" min="0" max="100000" label="Maximum titles per game (0 = no limit)" />
+                        <div class="fieldDescription">Hosts choose between all titles and a random selection. This caps both, e.g. for very large libraries on slow phones.</div>
                     </div>
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button"><span>Save</span></button>
@@ -67,7 +68,7 @@
                     document.querySelector('#AllowGuests').checked = config.AllowGuests;
                     document.querySelector('#ShowInSidebar').checked = config.ShowInSidebar;
                     document.querySelector('#AutoPlayDelaySeconds').value = config.AutoPlayDelaySeconds;
-                    document.querySelector('#MaxDeckSize').value = config.MaxDeckSize;
+                    document.querySelector('#DeckCap').value = config.DeckCap || 0;
                     Dashboard.hideLoadingMsg();
                 });
             });
@@ -79,7 +80,7 @@
                     config.DefaultHostUserId = document.querySelector('#DefaultHostUserId').value;
                     config.ShowInSidebar = document.querySelector('#ShowInSidebar').checked;
                     config.AutoPlayDelaySeconds = parseInt(document.querySelector('#AutoPlayDelaySeconds').value, 10) || 10;
-                    config.MaxDeckSize = parseInt(document.querySelector('#MaxDeckSize').value, 10) || 400;
+                    config.DeckCap = Math.max(0, parseInt(document.querySelector('#DeckCap').value, 10) || 0);
                     ApiClient.updatePluginConfiguration(JellySwipeConfig.pluginUniqueId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                     });

@@ -113,7 +113,8 @@ public sealed class LibraryService(
         return names.Select(n => new GenreInfo(n, n)).ToList();
     }
 
-    public List<DeckItem> BuildDeck(User user, GameSettings settings, int maxCards)
+    /// <summary>Deals the deck: every matching title, or a random selection of <paramref name="limit"/> titles.</summary>
+    public List<DeckItem> BuildDeck(User user, GameSettings settings, int? limit)
     {
         var views = SelectedViews(user, settings.LibraryIds).ToList();
         if (views.Count == 0)
@@ -122,45 +123,29 @@ public sealed class LibraryService(
         }
 
         var genres = settings.GenreIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var per = (int)Math.Ceiling(maxCards / (double)views.Count);
         var byId = new Dictionary<Guid, DeckItem>();
         foreach (var view in views)
         {
+            // No database-side random sort or limit: Jellyfin 10.11.0's repository returns duplicated rows for
+            // OrderBy Random (which then crash on duplicate provider ids), and genres are filtered in memory for
+            // the same reason. We load the matching titles once, shuffle them ourselves and cut to `limit`.
             var query = BaseQuery(user);
-            query.OrderBy = [(ItemSortBy.Random, SortOrder.Ascending)];
             if (settings.UnplayedOnly)
             {
                 query.IsPlayed = false;
             }
 
-            if (genres.Count > 0)
-            {
-                // Let the database pre-filter; the in-memory check below keeps results exact either way.
-                query.Genres = genres.ToArray();
-                query.Limit = per * 4;
-            }
-            else
-            {
-                query.Limit = per;
-            }
-
-            var taken = 0;
             foreach (var item in view.GetItemList(query))
             {
-                if (taken >= per)
-                {
-                    break;
-                }
-
                 if (genres.Count > 0 && !(item.Genres ?? []).Any(genres.Contains))
                 {
                     continue;
                 }
 
                 var card = ToCard(item);
-                if (card.Images.Length > 0 && byId.TryAdd(item.Id, card))
+                if (card.Images.Length > 0)
                 {
-                    taken++;
+                    byId.TryAdd(item.Id, card);
                 }
             }
         }
@@ -172,7 +157,18 @@ public sealed class LibraryService(
             (deck[i], deck[j]) = (deck[j], deck[i]);
         }
 
-        return deck;
+        return limit is { } max && deck.Count > max ? deck.GetRange(0, max) : deck;
+    }
+
+    private static string Shorten(string? text, int max)
+    {
+        if (string.IsNullOrEmpty(text) || text.Length <= max)
+        {
+            return text ?? string.Empty;
+        }
+
+        var cut = text.LastIndexOf(' ', max);
+        return text[..(cut > 0 ? cut : max)] + "…";
     }
 
     private static DeckItem ToCard(BaseItem item)
@@ -195,7 +191,7 @@ public sealed class LibraryService(
             Name = item.Name,
             Type = item is Series ? "Series" : "Movie",
             Year = item.ProductionYear,
-            Overview = item.Overview ?? string.Empty,
+            Overview = Shorten(item.Overview, 600),
             Genres = (item.Genres ?? []).Take(6).ToArray(),
             Rating = item.CommunityRating is { } r ? Math.Round(r, 1) : null,
             Critic = item.CriticRating,

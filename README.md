@@ -5,6 +5,7 @@
 - 🃏 Tinder-style cards: drag with rotation, LIKE / NOPE / SUPER LIKE stamps, tap to flip poster ↔ backdrops, rewind, "It's a Match!" celebration
 - 👥 Lobbies with a **4-digit code + QR code**. Nobody needs to log in: guests just type a name, and hosts without a Jellyfin session host as a user you pick.
 - 🎯 Goal of **1, 3 or 5 matches**. Solo mode turns right-swipes into your personal picks.
+- 🎲 Deal **all titles** or **a random selection** of any size (20, 100, 1000 …).
 - 📺 **Play on any Jellyfin device** you can control (Android TV, web, mobile…). Series start at the first unwatched episode and keep going.
 - ⏱ Optional **auto-play of the winner** with a cancellable countdown
 - 🧭 **Sidebar entry + header button** in Jellyfin web (via the [File Transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) plugin, optional)
@@ -74,11 +75,11 @@ unzip jellyswipe_0.2.0.1011.zip -d /config/plugins/JellySwipe_0.2.0.1011
 | Host games as (for people not signed in) | first administrator |
 | Show JellySwipe in the sidebar (needs File Transformation) | on |
 | Auto-play countdown | 10 s |
-| Maximum cards per game | 400 |
+| Maximum titles per game (server-wide cap, 0 = no limit) | 0 |
 
 ## How a game works
 
-1. **Create:** pick libraries (movies / shows / collections / home videos), optional genres, the match goal, "only unwatched", and optionally an auto-play device.
+1. **Create:** pick libraries (movies / shows / collections / home videos), optional genres, all titles or a random number of them, the match goal, "only unwatched", and optionally an auto-play device.
 2. **Lobby:** friends join by QR code or lobby code. With one player the host's button says *Play solo*.
 3. **Swipe:** everyone gets the **same set of cards, each in their own random order**. A match is a title every player in the lobby liked or super-liked.
 4. **Finish:** when the goal is reached, everyone sees the celebration and the ranked results (super-likes rank first, then match order). If the deck runs out first, you get the matches so far plus the *closest calls*.

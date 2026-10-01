@@ -110,6 +110,14 @@ def main():
         req(f"rooms/{code}/leave", {"secret": hs})
         req(f"rooms/{code}", expect=404)
 
+        # Deck size: a random selection deals exactly that many (when the library has enough), "all" deals more
+        sr = req("rooms", {"name": "Host", "settings": {"libraryIds": lib_ids, "goal": 1, "deckLimit": 3}}, token=token)
+        req(f"rooms/{sr['code']}/start", {"secret": sr["secret"]})
+        small = req(f"rooms/{sr['code']}/deck?secret={sr['secret']}")["deck"]
+        assert len(small) == min(3, len(deck)), f"deckLimit 3 dealt {len(small)}"
+        req(f"rooms/{sr['code']}/leave", {"secret": sr["secret"]})
+        print(f"deck limit 3: {len(small)} cards (all titles: {len(deck)})")
+
         # Genre filter: every card must carry the chosen genre
         if genres:
             g = genres[0]

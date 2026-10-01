@@ -64,6 +64,9 @@ public sealed class GameSettings
 
     public int Goal { get; set; } = 3;
 
+    /// <summary>Gets or sets how many random titles to deal; null or 0 deals every matching title.</summary>
+    public int? DeckLimit { get; set; }
+
     public AutoPlayTarget? AutoPlay { get; set; }
 }
 

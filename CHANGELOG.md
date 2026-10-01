@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- **Deck size:** choose *All titles* (default) or *A random selection of N*; type any number (20, 100, 1000 …). Admins can set an optional server-wide cap (0 = no limit).
+- **Redesigned UI:** plainer and quieter. System fonts, native form controls, lists instead of card stacks, no confetti or decorative animation. The Tinder card, colours and "It's a Match!" stay.
+- Card images for the first cards are preloaded as soon as a game starts.
+- Pinch-zoom is no longer blocked (accessibility).
+
 ## 0.2.0: first public release
 
 **Swipe your Jellyfin library with friends, Tinder-style, until you match on what to watch.**

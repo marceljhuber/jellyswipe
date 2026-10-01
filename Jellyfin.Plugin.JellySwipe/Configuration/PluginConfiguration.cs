@@ -19,6 +19,6 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the countdown before the winner is auto-played.</summary>
     public int AutoPlayDelaySeconds { get; set; } = 10;
 
-    /// <summary>Gets or sets the maximum number of cards dealt per game.</summary>
-    public int MaxDeckSize { get; set; } = 400;
+    /// <summary>Gets or sets an optional server-wide cap on cards per game (0 = no cap; hosts choose "all" or a random number).</summary>
+    public int DeckCap { get; set; }
 }
