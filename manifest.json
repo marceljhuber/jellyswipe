@@ -10,6 +10,38 @@
     "changelog": "0.3.0: choose all titles or a random number of them; Jellyfin 10.11.0 fix; first card images preload; wording cleanup. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
     "versions": [
       {
+        "version": "0.3.0.1200",
+        "changelog": "0.3.0: choose all titles or a random number of them; Jellyfin 10.11.0 fix; first card images preload; wording cleanup. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.0/jellyswipe_0.3.0.1200.zip",
+        "checksum": "3c58eb27e29178e3a1744bafeef1fdbd",
+        "timestamp": "2026-10-02T01:42:43Z"
+      },
+      {
+        "version": "0.3.0.1011",
+        "changelog": "0.3.0: choose all titles or a random number of them; Jellyfin 10.11.0 fix; first card images preload; wording cleanup. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.0/jellyswipe_0.3.0.1011.zip",
+        "checksum": "6720a0e596a1c33b00e7d0727503a4c0",
+        "timestamp": "2026-10-02T01:42:43Z"
+      },
+      {
+        "version": "0.3.0.1010",
+        "changelog": "0.3.0: choose all titles or a random number of them; Jellyfin 10.11.0 fix; first card images preload; wording cleanup. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.0/jellyswipe_0.3.0.1010.zip",
+        "checksum": "e4343f5d9bc4450176f42cd7b9900e79",
+        "timestamp": "2026-10-02T01:42:43Z"
+      },
+      {
+        "version": "0.3.0.109",
+        "changelog": "0.3.0: choose all titles or a random number of them; Jellyfin 10.11.0 fix; first card images preload; wording cleanup. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "10.9.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.0/jellyswipe_0.3.0.109.zip",
+        "checksum": "97e9f1cbdfdc32730f2ab029bd3f2309",
+        "timestamp": "2026-10-02T01:42:43Z"
+      },
+      {
         "version": "0.2.0.1200",
         "changelog": "First public release: lobbies with code + QR (no login needed), Tinder-style swiping with per-player order, matches, solo mode, play/auto-play on Jellyfin devices, sidebar entry. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
         "targetAbi": "12.0.0.0",
