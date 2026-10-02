@@ -117,19 +117,21 @@ function renderHome() {
     <div class="screen">
       <div class="topbar"><div class="side"></div>${logo}<div class="side"></div></div>
       <div class="scroll">
-        <p class="intro">Can't agree on a movie? Everyone swipes through your Jellyfin library on their phone, and the first title you all like wins.</p>
-        <div class="field"><label for="name">Your name</label><input class="input" id="name" maxlength="20" placeholder="Alex" value="${esc(name)}" autocomplete="nickname"></div>
-        ${S.jf?.host ? '<button class="btn btn-primary block" id="create">Create a game</button>' : '<a class="btn btn-primary block" href="../web/">Sign in to Jellyfin to host</a>'}
-        <div class="or">or</div>
-        <div class="field"><label for="code">Join a game with its code</label>
-          <div class="inline">
-            <input class="input code" id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000" value="${esc(joinParam || '')}" autocomplete="off">
-            <button class="btn btn-secondary" id="join">Join</button>
-          </div>
+        <div class="hero">
+          <div>${I.flame.replace('<svg', '<svg class="big-logo"')}</div>
+          <h1>Can't agree on a movie?</h1>
+          <p>Everyone swipes through your Jellyfin library on their phone, and the first title you all like wins.</p>
         </div>
-        <div class="error" id="err" role="alert"></div>
+        <div class="stack" style="margin-top:28px">
+          <div class="field"><label>Your name</label><input class="input" id="name" maxlength="20" placeholder="e.g. Alex" value="${esc(name)}" autocomplete="nickname"></div>
+          ${S.jf?.host ? '<button class="btn btn-primary" id="create">Create game</button>' : '<a class="btn btn-primary" href="../web/" style="text-decoration:none">Sign in to Jellyfin to host</a>'}
+          <div class="divider">or join a lobby</div>
+          <input class="input code-input" id="code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="····" value="${esc(joinParam || '')}" autocomplete="off">
+          <div class="error" id="err"></div>
+          <button class="btn btn-outline" id="join">Join</button>
+        </div>
       </div>
-      <div class="footer muted">${S.jf?.host ? `Games use the library of ${esc(S.jf.host)}.` : 'Joining needs no account.'} <a href="../web/">Back to Jellyfin</a></div>
+      <div class="sticky-footer hint">${S.jf?.host ? `Hosting as <b>${esc(S.jf.host)}</b>.` : 'Joining a lobby needs no account.'} <a href="../web/">Back to Jellyfin</a></div>
     </div>`;
   const nameEl = $('#name');
   const codeEl = $('#code');
@@ -165,13 +167,8 @@ function renderHome() {
 async function renderCreate() {
   const saved = store.get('lastSettings', {});
   const sel = {
-    libs: new Set(saved.libraryIds || []),
-    genres: new Set(),
-    goal: saved.goal || 3,
-    unplayed: !!saved.unplayedOnly,
-    limited: !!saved.deckLimit,
-    limit: saved.deckLimit || saved.lastLimit || 100,
-    autoPlay: null,
+    libs: new Set(saved.libraryIds || []), genres: new Set(), goal: saved.goal || 3, unplayed: !!saved.unplayedOnly, autoPlay: null,
+    limited: !!saved.deckLimit, limit: saved.deckLimit || saved.lastLimit || 100,
   };
   let libs = [];
   let genres = [];
@@ -179,68 +176,70 @@ async function renderCreate() {
     <div class="screen">
       <div class="topbar"><div class="side"><button class="icon-btn" id="back" aria-label="Back">${I.back}</button></div>${logo}<div class="side"></div></div>
       <div class="scroll">
-        <h2 class="section" style="margin-top:0">Libraries</h2>
-        <div class="checks" id="libs"><div class="spinner" style="margin:12px"></div></div>
-
-        <h2 class="section">Genres <span class="note">(leave empty for all)</span></h2>
-        <div class="tags" id="genres"><span class="muted">Pick a library first.</span></div>
-
-        <h2 class="section">Titles in the deck</h2>
-        <div class="checks" id="deck-size">
-          <label><input type="radio" name="size" value="all" ${sel.limited ? '' : 'checked'}> All titles</label>
-          <label><input type="radio" name="size" value="some" ${sel.limited ? 'checked' : ''}> A random selection of
-            <input class="num" id="limit" type="number" inputmode="numeric" min="1" max="100000" step="1" value="${sel.limit}" aria-label="Number of titles"></label>
+        <div class="section-title">Libraries <small id="libcount"></small></div>
+        <div class="tiles" id="libs"><div class="spinner"></div></div>
+        <div class="section-title">Genres <small>optional, all if none</small></div>
+        <div class="chips" id="genres"><span class="hint">Pick a library first</span></div>
+        <div class="section-title">Titles in the deck</div>
+        <div class="segmented two" id="deck-size">
+          <button data-size="all">All<small>titles</small></button>
+          <button data-size="some"><input class="deck-num" id="limit" type="number" inputmode="numeric" min="1" max="100000" value="${sel.limit}" aria-label="Number of random titles"><small>random titles</small></button>
         </div>
-
-        <h2 class="section">Stop after</h2>
-        <div class="radios" id="goal">${[1, 3, 5].map((g) => `<label><input type="radio" name="goal" value="${g}" ${g === sel.goal ? 'checked' : ''}> ${g} match${g > 1 ? 'es' : ''}</label>`).join('')}</div>
-
-        <h2 class="section">Options</h2>
-        <div class="checks"><label><input type="checkbox" id="unplayed" ${sel.unplayed ? 'checked' : ''}> Only titles nobody has watched</label></div>
-
-        <h2 class="section">Play the winner on</h2>
-        <select class="input" id="devices"><option value="">Don't play automatically</option></select>
-        <p class="muted" style="margin-top:6px">Devices appear here while a Jellyfin app is open on them.</p>
+        <div class="hint" style="margin-top:8px;text-align:left">Tap the number to change it, for example 20 or 1000.</div>
+        <div class="section-title">Goal</div>
+        <div class="segmented" id="goal">${[1, 3, 5].map((g) => `<button data-g="${g}">${g}<small>match${g > 1 ? 'es' : ''}</small></button>`).join('')}</div>
+        <div class="section-title">Options</div>
+        <div class="stack">
+          <button class="toggle-row" id="unplayed"><span>Only unwatched</span><span class="switch"></span></button>
+        </div>
+        <div class="section-title">Auto-play the winner on <small>optional</small></div>
+        <div class="chips" id="devices"><span class="hint">Looking for Jellyfin devices…</span></div>
+        <div class="hint" style="margin-top:8px;text-align:left">Devices show up while a Jellyfin app is open on them (TV, phone, browser).</div>
       </div>
-      <div class="footer"><div class="error" id="err" role="alert"></div><button class="btn btn-primary block" id="go" disabled>Create lobby</button></div>
+      <div class="sticky-footer"><div class="error" id="err"></div><button class="btn btn-primary" id="go" disabled>Create lobby</button></div>
     </div>`;
   $('#back').onclick = () => show('home', renderHome);
-  const limitEl = $('#limit');
 
   const paint = () => {
-    for (const c of app.querySelectorAll('#genres .tag-btn')) c.setAttribute('aria-pressed', sel.genres.has(c.dataset.id));
+    for (const t of app.querySelectorAll('.tile')) t.classList.toggle('on', sel.libs.has(t.dataset.id));
+    for (const c of app.querySelectorAll('#genres .chip')) c.classList.toggle('on', sel.genres.has(c.dataset.id));
+    for (const b of app.querySelectorAll('#goal button')) b.classList.toggle('on', Number(b.dataset.g) === sel.goal);
+    for (const b of app.querySelectorAll('#deck-size button')) b.classList.toggle('on', (b.dataset.size === 'some') === sel.limited);
+    for (const c of app.querySelectorAll('#devices .chip')) c.classList.toggle('on', (c.dataset.id || null) === (sel.autoPlay?.deviceId || null));
+    $('#unplayed .switch').classList.toggle('on', sel.unplayed);
     $('#go').disabled = !sel.libs.size || (sel.limited && !(sel.limit > 0));
+    $('#libcount').textContent = sel.libs.size ? `${sel.libs.size} selected` : 'pick at least one';
   };
   const loadGenres = async () => {
     const el = $('#genres');
-    if (!sel.libs.size) { el.innerHTML = '<span class="muted">Pick a library first.</span>'; genres = []; return; }
-    el.innerHTML = '<div class="spinner"></div>';
+    if (!sel.libs.size) { el.innerHTML = '<span class="hint">Pick a library first</span>'; genres = []; return; }
+    el.innerHTML = '<div class="spinner" style="margin:4px"></div>';
     try {
       genres = await api(`genres?libraryIds=${[...sel.libs].join(',')}`);
       for (const id of [...sel.genres]) if (!genres.some((g) => g.id === id)) sel.genres.delete(id);
-      el.innerHTML = genres.length ? genres.map((g) => `<button class="tag-btn" data-id="${esc(g.id)}" aria-pressed="false">${esc(g.name)}</button>`).join('') : '<span class="muted">No genres in these libraries.</span>';
+      el.innerHTML = genres.length ? genres.map((g) => `<button class="chip" data-id="${g.id}">${esc(g.name)}</button>`).join('') : '<span class="hint">No genres found</span>';
       paint();
     } catch (e) { el.innerHTML = `<span class="error">${esc(e.message)}</span>`; }
   };
 
-  const screen = app.firstElementChild;
-  screen.addEventListener('click', (e) => {
-    const chip = e.target.closest('#genres .tag-btn');
-    if (chip) { sel.genres.has(chip.dataset.id) ? sel.genres.delete(chip.dataset.id) : sel.genres.add(chip.dataset.id); paint(); }
+  app.firstElementChild.addEventListener('click', (e) => {
+    const tile = e.target.closest('.tile');
+    const chip = e.target.closest('#genres .chip');
+    const goal = e.target.closest('#goal button');
+    const dev = e.target.closest('#devices .chip');
+    const size = e.target.closest('#deck-size button');
+    if (size) { sel.limited = size.dataset.size === 'some'; if (sel.limited && e.target.id !== 'limit') { $('#limit').focus(); $('#limit').select(); } }
+    if (tile) { sel.libs.has(tile.dataset.id) ? sel.libs.delete(tile.dataset.id) : sel.libs.add(tile.dataset.id); vibrate(10); loadGenres(); }
+    if (chip) sel.genres.has(chip.dataset.id) ? sel.genres.delete(chip.dataset.id) : sel.genres.add(chip.dataset.id);
+    if (goal) sel.goal = Number(goal.dataset.g);
+    if (dev) sel.autoPlay = dev.dataset.id ? { deviceId: dev.dataset.id, deviceName: dev.dataset.name } : null;
+    if (e.target.closest('#unplayed')) sel.unplayed = !sel.unplayed;
+    if (tile || chip || goal || dev || size || e.target.closest('#unplayed')) paint();
   });
-  screen.addEventListener('change', (e) => {
-    const t = e.target;
-    if (t.closest('#libs')) { t.checked ? sel.libs.add(t.value) : sel.libs.delete(t.value); loadGenres(); }
-    if (t.name === 'goal') sel.goal = Number(t.value);
-    if (t.name === 'size') sel.limited = t.value === 'some';
-    if (t.id === 'unplayed') sel.unplayed = t.checked;
-    if (t.id === 'devices') sel.autoPlay = t.value ? { deviceId: t.value, deviceName: t.selectedOptions[0].dataset.name } : null;
-    paint();
-  });
-  // Typing or focusing the number picks "random selection" automatically.
-  const pickSome = () => { sel.limited = true; $('#deck-size input[value="some"]').checked = true; };
-  limitEl.addEventListener('focus', pickSome);
-  limitEl.addEventListener('input', () => { pickSome(); sel.limit = parseInt(limitEl.value, 10) || 0; paint(); });
+
+  const limitEl = $('#limit');
+  limitEl.addEventListener('focus', () => { sel.limited = true; paint(); });
+  limitEl.addEventListener('input', () => { sel.limited = true; sel.limit = parseInt(limitEl.value, 10) || 0; paint(); });
 
   $('#go').onclick = async () => {
     const btn = $('#go');
@@ -267,20 +266,20 @@ async function renderCreate() {
     libs = await api('libraries');
     for (const id of [...sel.libs]) if (!libs.some((l) => l.id === id)) sel.libs.delete(id);
     if (!sel.libs.size) for (const l of libs) if (l.type === 'movies') sel.libs.add(l.id);
-    const kind = { movies: 'Movies', tvshows: 'Shows', boxsets: 'Collections', homevideos: 'Home videos', mixed: 'Mixed' };
     $('#libs').innerHTML = libs.length
-      ? libs.map((l) => { const k = kind[l.type] || ''; return `<label><input type="checkbox" value="${esc(l.id)}" ${sel.libs.has(l.id) ? 'checked' : ''}> ${esc(l.name)}<span class="kind">${k.toLowerCase() === l.name.toLowerCase() ? '' : k}</span></label>`; }).join('')
-      : '<label class="muted">This account has no movie or TV libraries.</label>';
+      ? libs.map((l) => `<button class="tile" data-id="${l.id}" style="${l.hasImage ? `background-image:url('${img(l.id, 'Primary/0', 400)}')` : 'background-image:var(--brand)'}"><span>${esc(l.name)}</span><i class="check">${I.check}</i></button>`).join('')
+      : '<span class="hint">No movie or TV libraries visible to this Jellyfin user.</span>';
     paint();
     loadGenres();
   } catch (e) {
-    $('#libs').innerHTML = `<label class="error">${esc(e.message)}</label>`;
+    $('#libs').innerHTML = `<span class="error">${esc(e.message)}</span>`;
     if (e.status === 401) { S.jf = await api('status'); route(); }
   }
   try {
     const devices = await api('sessions');
-    $('#devices').insertAdjacentHTML('beforeend', devices.map((d) => `<option value="${esc(d.deviceId)}" data-name="${esc(d.device)}">${esc(d.device)} (${esc(d.client)})</option>`).join(''));
-  } catch { /* the select keeps its "don't play" option */ }
+    $('#devices').innerHTML = `<button class="chip" data-id="">Off</button>${devices.map((d) => `<button class="chip" data-id="${esc(d.deviceId)}" data-name="${esc(d.device)}">${esc(d.device)} (${esc(d.client)})</button>`).join('')}`;
+    paint();
+  } catch { $('#devices').innerHTML = '<span class="hint">Could not list devices</span>'; }
 }
 
 // ---------- Room connection (SSE) ----------
@@ -400,58 +399,54 @@ function renderLobby(same) {
   const r = S.room;
   const joinUrl = `${location.origin}${location.pathname}?join=${r.code}`;
   const isLocal = /^(localhost|127\.|\[::1\])/.test(location.hostname);
-  const st = r.settings;
   const summary = [
-    `${st.libraryNames.join(', ') || 'Library'}${st.genreNames.length ? ` (${st.genreNames.join(', ')})` : ''}`,
-    st.deckLimit ? `${st.deckLimit} random titles` : 'all titles',
-    `stops after ${st.goal} match${st.goal > 1 ? 'es' : ''}`,
-    ...(st.unplayedOnly ? ['unwatched only'] : []),
-    ...(st.autoPlay ? [`plays on ${st.autoPlay.deviceName}`] : []),
-  ].join(', ');
+    ...r.settings.libraryNames,
+    ...(r.settings.genreNames.length ? r.settings.genreNames : ['All genres']),
+    r.settings.deckLimit ? `${r.settings.deckLimit} random titles` : 'All titles',
+    `Goal: ${r.settings.goal} match${r.settings.goal > 1 ? 'es' : ''}`,
+    ...(r.settings.unplayedOnly ? ['Unwatched only'] : []),
+    ...(r.settings.autoPlay ? [`▶ ${r.settings.autoPlay.deviceName}`] : []),
+  ];
   const players = r.players.map((p) => `
-    <li>${avatar(p)}<span class="name">${esc(p.name)}${p.id === r.you.id ? ' <span class="muted">(you)</span>' : ''}</span>
-      ${p.host ? '<span class="role">host</span>' : ''}
+    <div class="player">${avatar(p)}<span class="name">${esc(p.name)}${p.id === r.you.id ? ' <span class="hint">(you)</span>' : ''}</span>
+      ${p.host ? '<span class="tag">Host</span>' : ''}
       ${r.you.host && !p.host ? `<button class="icon-btn" data-kick="${p.id}" aria-label="Remove ${esc(p.name)}">${I.close}</button>` : ''}
-    </li>`).join('');
+    </div>`).join('');
   const solo = r.players.length === 1;
   const footer = r.you.host
-    ? `<button class="btn btn-primary block" id="start">${solo ? 'Play on my own' : `Start with ${r.players.length} players`}</button>
-       <div class="muted">${solo ? 'Matches need at least two players.' : 'A title matches when everyone likes it.'}</div>`
-    : '<div class="waiting">Waiting for the host to start the game.</div>';
+    ? `<button class="btn btn-primary" id="start">${solo ? 'Play solo' : `Start with ${r.players.length} players`}</button>
+       <div class="hint" style="margin-top:8px">${solo ? 'Matches need at least two players, so wait for friends or play on your own.' : 'A title matches when everyone likes it.'}</div>`
+    : '<div class="waiting"><span class="pulse"></span>Waiting for the host to start…</div>';
 
   if (same && $('#players')) {
     $('#players').innerHTML = players;
-    $('#pcount').textContent = `(${r.players.length})`;
+    $('#pcount').textContent = `${r.players.length}/12`;
     $('#lobby-footer').innerHTML = footer;
     bindLobby();
     return;
   }
   app.innerHTML = `
     <div class="screen">
-      <div class="topbar"><div class="side"><button class="icon-btn" id="leave" aria-label="Leave lobby">${I.close}</button></div>${logo}<div class="side"></div></div>
+      <div class="topbar"><div class="side"><button class="icon-btn" id="leave" aria-label="Leave">${I.close}</button></div>${logo}<div class="side"></div></div>
       <div class="scroll">
-        <div class="lobby-top">
-          <div class="qr" role="img" aria-label="QR code to join lobby ${r.code}">${qrSvg(joinUrl)}</div>
-          <div>
-            <div class="muted">Lobby code</div>
-            <div class="code-big">${r.code}</div>
-            <p>Friends scan the QR code or enter the code on the JellySwipe page.</p>
-            <button class="link" id="share">Copy invite link</button>
-          </div>
-        </div>
-        ${isLocal ? '<div class="warn">Open this page with the server\'s network address, otherwise phones can\'t use the QR code.</div>' : ''}
-        <div class="settings-line">${esc(summary.charAt(0).toUpperCase() + summary.slice(1))}.</div>
-        <h2 class="section">Players <span class="note" id="pcount">(${r.players.length})</span></h2>
-        <ul class="list" id="players">${players}</ul>
+        <div class="lobby-code"><div class="label">Lobby code</div><div class="digits">${r.code}</div></div>
+        <div class="qr" role="img" aria-label="QR code to join lobby ${r.code}">${qrSvg(joinUrl)}</div>
+        ${isLocal ? '<div class="hint">Open this page with the server\'s network address so phones can use the QR code.</div>' : ''}
+        <div class="share-row"><button class="pill-btn" id="share">${I.share} Share invite</button></div>
+        <div class="summary">${summary.map((s) => `<span>${esc(s)}</span>`).join('')}</div>
+        <div class="section-title">Players <small id="pcount">${r.players.length}/12</small></div>
+        <div class="players" id="players">${players}</div>
       </div>
-      <div class="footer" id="lobby-footer">${footer}</div>
+      <div class="sticky-footer" id="lobby-footer">${footer}</div>
     </div>`;
   $('#leave').onclick = leaveRoom;
   $('#share').onclick = async () => {
     const copied = await copyText(joinUrl);
     toast(copied ? 'Invite link copied' : joinUrl);
-    if (navigator.share) { try { await navigator.share({ title: 'JellySwipe', text: `Join my JellySwipe game, code ${r.code}`, url: joinUrl }); } catch { /* dismissed */ } }
+    vibrate(15);
+    if (navigator.share) { try { await navigator.share({ title: 'JellySwipe', text: `Join my JellySwipe lobby ${r.code}`, url: joinUrl }); } catch { /* dismissed */ } }
   };
+  $('.lobby-code').onclick = async () => { if (await copyText(joinUrl)) toast('Invite link copied'); };
   bindLobby();
 }
 
@@ -460,7 +455,7 @@ function bindLobby() {
   $('#start')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
-    btn.textContent = 'Dealing cards…';
+    btn.innerHTML = 'Shuffling the deck…';
     try { await api(`rooms/${s.code}/start`, { secret: s.secret }); } catch (err) { toast(err.message); btn.disabled = false; renderLobby(true); }
   });
   for (const b of app.querySelectorAll('[data-kick]')) {
@@ -526,8 +521,8 @@ function cardHtml(it, depth) {
       <div class="shade"></div>
       <div class="info">
         <div class="title-row"><h2>${esc(it.name)}${it.year ? `<small>${it.year}</small>` : ''}</h2><button class="info-btn" aria-label="Details">${I.info}</button></div>
-        <div class="meta">${it.type === 'Series' ? '<span class="series">Series</span>' : ''}${meta}</div>
-        ${it.genres.length ? `<div class="chips">${it.genres.slice(0, 3).map((g) => `<span>${esc(g)}</span>`).join('')}</div>` : ''}
+        <div class="meta">${it.type === 'Series' ? '<span class="type-badge">Series</span>' : ''}${meta}</div>
+        ${it.genres.length ? `<div class="tags">${it.genres.slice(0, 3).map((g) => `<span>${esc(g)}</span>`).join('')}</div>` : ''}
         ${idx === 0 && it.overview ? `<div class="overview">${esc(it.overview)}</div>` : ''}
       </div>
     </div>`;
@@ -545,8 +540,9 @@ function renderStack() {
   const items = S.deck.slice(S.pos, S.pos + 3);
   if (!items.length) {
     const others = S.room.players.filter((p) => p.id !== S.room.you.id && p.progress < S.room.deckSize);
-    deckEl.innerHTML = `<div class="empty-deck"><h3>No cards left</h3>
-      <p>${others.length ? `Waiting for ${others.map((p) => esc(p.name)).join(', ')} to finish swiping.` : 'Counting the votes.'}</p></div>`;
+    deckEl.innerHTML = `<div class="empty-deck"><div class="radar"><img src="icon.svg" alt=""></div>
+      <b style="color:var(--text);font-size:18px">You're out of cards</b>
+      <div>${others.length ? `Waiting for ${others.map((p) => esc(p.name)).join(', ')} to finish swiping…` : 'Wrapping up…'}</div></div>`;
     return;
   }
   deckEl.innerHTML = items.map((it, i) => cardHtml(it, i)).reverse().join('');
@@ -576,11 +572,11 @@ function bindCard(card, it) {
     stamps.super.style.opacity = sup;
     const p = Math.min(1, Math.hypot(dx, dy) / 150);
     if (next) next.style.transform = `scale(${0.96 + 0.04 * p})`;
-    btns.like?.classList.toggle('pressed', like > 0.6 && !sup);
-    btns.nope?.classList.toggle('pressed', nope > 0.6 && !sup);
-    btns.super?.classList.toggle('pressed', sup > 0.6);
+    btns.like?.classList.toggle('flash-like', like > 0.6 && !sup);
+    btns.nope?.classList.toggle('flash-nope', nope > 0.6 && !sup);
+    btns.super?.classList.toggle('flash-super', sup > 0.6);
   };
-  const clearBtns = () => Object.values(btns).forEach((b) => b?.classList.remove('pressed'));
+  const clearBtns = () => Object.values(btns).forEach((b) => b?.classList.remove('flash-like', 'flash-nope', 'flash-super'));
 
   card.addEventListener('pointerdown', (e) => {
     if (card.dataset.gone || e.button > 0) return;
@@ -678,8 +674,8 @@ function swipeTop(choice) {
   const card = $(`#deck .card[data-id="${it.id}"]`);
   if (!card) return;
   const btn = $(`#b-${choice}`);
-  btn?.classList.add('pressed');
-  setTimeout(() => btn?.classList.remove('pressed'), 150);
+  btn?.classList.add(`flash-${choice}`);
+  setTimeout(() => btn?.classList.remove(`flash-${choice}`), 200);
   const stamp = $(`.stamp.${choice}`, card);
   if (stamp) stamp.style.opacity = 1;
   setTimeout(() => flyOut(card, choice), 90);
@@ -723,44 +719,60 @@ function closeSheet() { overlayRoot.querySelector('.sheet-backdrop')?.remove(); 
 
 function openDetails(it) {
   const hero = it.images.find((r) => r.startsWith('Backdrop')) || it.images[0];
-  const facts = [it.year, it.type === 'Series' ? 'Series' : 'Movie', it.runtime && it.type !== 'Series' && fmtRuntime(it.runtime), it.seasons && `${it.seasons} seasons`, it.official, it.rating && `rated ${it.rating}`, it.critic && `${it.critic}% critics`].filter(Boolean);
+  const facts = [it.year, it.type === 'Series' ? 'Series' : 'Movie', it.runtime && it.type !== 'Series' && fmtRuntime(it.runtime), it.seasons && `${it.seasons} seasons`, it.official, it.rating && `★ ${it.rating}`, it.critic && `${it.critic}% critics`].filter(Boolean);
   const inGame = S.screen === 'game';
   const el = openSheet(`
     <div class="hero-img" style="background-image:url('${img(it.id, hero, 1280)}')"></div>
     <div class="body">
       <h3>${esc(it.name)}</h3>
-      <div class="facts">${esc(facts.join(', '))}${it.genres.length ? `<br>${esc(it.genres.join(', '))}` : ''}</div>
+      <div class="facts">${facts.map((f) => `<span>${esc(f)}</span>`).join('')}</div>
+      ${it.genres.length ? `<div class="hint" style="text-align:left">${it.genres.map(esc).join(', ')}</div>` : ''}
       <p>${esc(it.overview || 'No description.')}</p>
       ${inGame ? `<div class="actions" style="padding-bottom:0">
-        <button class="action nope" data-c="nope" aria-label="Nope">${I.nope}</button>
-        <button class="action small super" data-c="super" aria-label="Super like">${I.star}</button>
-        <button class="action like" data-c="like" aria-label="Like">${I.like}</button></div>` : ''}
+        <button class="action nope" data-c="nope">${I.nope}</button>
+        <button class="action small super" data-c="super">${I.star}</button>
+        <button class="action like" data-c="like">${I.like}</button></div>` : ''}
     </div>`);
   for (const b of el.querySelectorAll('[data-c]')) b.onclick = () => { closeSheet(); swipeTop(b.dataset.c); };
 }
 
 function openPlayersSheet() {
   const r = S.room;
-  const progress = r.mode === 'solo' ? `${r.you.picks} of ${r.settings.goal} picks` : `${r.matches.length} of ${r.settings.goal} matches`;
   const el = openSheet(`
     <div class="body">
-      <h3>${r.mode === 'solo' ? 'Playing alone' : 'Players'}</h3>
-      <p class="muted">Lobby ${r.code}. ${progress}, ${r.deckSize} titles in the deck.</p>
-      <ul class="list">${r.players.map((p) => `<li>${avatar(p)}<span class="name">${esc(p.name)}</span><span class="role">${Math.min(p.progress, r.deckSize)} of ${r.deckSize} swiped</span></li>`).join('')}</ul>
-      <div class="sheet-actions">
-        ${r.matches.length ? '<button class="btn btn-secondary" id="see-matches">Matches so far</button>' : ''}
-        <button class="btn btn-secondary" id="quit">Leave game</button>
+      <h3>${r.mode === 'solo' ? 'Solo game' : 'Players'}</h3>
+      <div class="hint" style="text-align:left;margin-bottom:12px">Lobby ${r.code}: ${r.mode === 'solo' ? `${r.you.picks} of ${r.settings.goal} picks` : `${r.matches.length} of ${r.settings.goal} matches`}, ${r.deckSize} titles in the deck.</div>
+      <div class="players">${r.players.map((p) => `<div class="player">${avatar(p)}<span class="name">${esc(p.name)}</span><span class="hint">${Math.min(p.progress, r.deckSize)}/${r.deckSize} swiped</span></div>`).join('')}</div>
+      <div class="stack" style="margin-top:18px">
+        ${r.matches.length ? '<button class="btn btn-outline" id="see-matches">See matches so far</button>' : ''}
+        <button class="btn btn-ghost" id="quit">Leave game</button>
       </div>
     </div>`);
   $('#quit', el).onclick = () => { closeSheet(); leaveRoom(); };
   $('#see-matches', el)?.addEventListener('click', () => {
     closeSheet();
-    openSheet(`<div class="body"><h3>Matches so far</h3><ul class="results">${r.matches.map((m, i) => resultHtml(m, i)).join('')}</ul></div>`);
+    openSheet(`<div class="body"><h3>Matches</h3><div class="result-list">${r.matches.map((m, i) => resultHtml(m, i)).join('')}</div></div>`);
     bindResults(overlayRoot);
   });
 }
 
 // ---------- It's a Match! ----------
+function confetti(root, n = 40) {
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti';
+  const glyphs = ['❤️', '💖', '✨', '🍿', '🎬', '💘'];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('i');
+    c.textContent = glyphs[i % glyphs.length];
+    c.style.left = `${Math.random() * 100}%`;
+    c.style.fontSize = `${14 + Math.random() * 22}px`;
+    c.style.animationDuration = `${2.4 + Math.random() * 2.5}s`;
+    c.style.animationDelay = `${Math.random() * 1.2}s`;
+    wrap.appendChild(c);
+  }
+  root.appendChild(wrap);
+}
+
 function queueMatch(m, room) {
   S.overlayOpen = true;
   closeSheet();
@@ -771,15 +783,18 @@ function queueMatch(m, room) {
   const done = room.status === 'finished';
   const el = document.createElement('div');
   el.className = 'match-overlay';
-  el.setAttribute('role', 'dialog');
-  el.setAttribute('aria-label', `It's a match: ${m.name}`);
   el.innerHTML = `
+    <div class="bg" style="background-image:url('${img(m.id, m.images.find((r) => r.startsWith('Backdrop')) || m.images[0], 1280)}')"></div>
     <h1 class="match-title">It's a Match!</h1>
-    <div class="match-sub">You and ${esc(who)} both want to watch ${esc(m.name)}.</div>
-    <div class="match-poster" style="background-image:url('${img(m.id, m.images[0], 600)}')"></div>
-    <div class="match-meta">Match ${room.matches.length} of ${room.settings.goal}</div>
-    <button class="btn btn-primary" id="keep">${done ? 'See the results' : 'Keep swiping'}</button>
-    <button class="btn btn-secondary" id="m-details">Details</button>`;
+    <div class="match-sub">You and ${esc(who)} want to watch <b>${esc(m.name)}</b></div>
+    <div class="match-posters"><div class="match-poster" style="background-image:url('${img(m.id, m.images[0], 600)}')"></div></div>
+    <div class="match-likers">${m.likedBy.map((id) => avatar(playerById(id), 'sm')).join('')}</div>
+    <div class="match-progress">Match ${room.matches.length} of ${room.settings.goal}</div>
+    <div class="stack" style="width:100%;align-items:center">
+      <button class="btn btn-primary" id="keep">${done ? 'See all matches' : 'Keep swiping'}</button>
+      <button class="btn btn-outline" id="m-details">Details</button>
+    </div>`;
+  confetti(el, done ? 70 : 36);
   overlayRoot.appendChild(el);
   vibrate([60, 40, 120]);
   $('#keep', el).onclick = () => {
@@ -787,7 +802,6 @@ function queueMatch(m, room) {
     if (S.pendingResults) { S.pendingResults = false; route(); }
   };
   $('#m-details', el).onclick = () => openDetails(m);
-  $('#keep', el).focus();
 }
 
 function closeOverlay() {
@@ -797,22 +811,22 @@ function closeOverlay() {
 
 // ---------- Results ----------
 function resultHtml(m, i, extra = '') {
-  const likers = (m.likedBy || []).map(playerById).filter(Boolean).map((p) => p.name);
+  const likers = (m.likedBy || []).map(playerById).filter(Boolean);
   const supers = (m.superBy || []).length;
-  const notes = [subline(m), likers.length > 1 ? `Liked by ${likers.join(' and ')}` : '', supers ? `${supers} super like${supers > 1 ? 's' : ''}` : '', extra].filter(Boolean);
   return `
-    <li data-id="${m.id}">
-      <span class="rank">${i + 1}</span>
-      <div class="poster" role="img" aria-label="${esc(m.name)} poster" style="background-image:url('${img(m.id, m.images[0], 200)}')"></div>
+    <div class="result" style="animation-delay:${i * 90}ms" data-id="${m.id}">
+      <div class="poster" style="background-image:url('${img(m.id, m.images[0], 300)}')"><span class="rank">${i + 1}</span></div>
       <div class="body">
         <h4>${esc(m.name)}</h4>
-        <div class="sub">${esc(notes.join('. '))}</div>
+        <div class="sub">${esc(subline(m))}</div>
+        <div class="sub">${esc(m.genres.slice(0, 3).join(', '))}${supers ? `, <span style="color:var(--super)">★ ${supers} super like${supers > 1 ? 's' : ''}</span>` : ''}${extra}</div>
+        ${likers.length > 1 ? `<div class="likers">${likers.map((p) => avatar(p, 'sm')).join('')}</div>` : ''}
         <div class="row">
           <button class="btn btn-primary" data-play="${m.id}">${I.play} Play</button>
-          <button class="link" data-info="${m.id}">Details</button>
+          <button class="btn btn-outline" data-info="${m.id}" aria-label="Details">${I.info}</button>
         </div>
       </div>
-    </li>`;
+    </div>`;
 }
 
 function allResultItems() {
@@ -833,39 +847,39 @@ function renderResults() {
   const byId = new Map(allResultItems().map((m) => [m.id, m]));
   const main = (res.ranked?.length ? res.ranked : (solo ? res.picks : r.matches).map((m) => m.id)).map((id) => byId.get(id)).filter(Boolean);
   const reached = res.reason === 'goal';
-  const n = main.length;
   let title;
   let sub;
   if (solo) {
-    title = reached ? 'Your picks' : 'No cards left';
-    sub = n ? `You liked ${n} title${n > 1 ? 's' : ''}. The first one is your winner.` : 'You passed on everything this time.';
+    title = reached ? 'Your picks' : 'Out of cards';
+    sub = main.length ? `You picked ${main.length} title${main.length > 1 ? 's' : ''}. The first one is your winner.` : 'You passed on everything this time.';
   } else if (reached) {
-    title = n === 1 ? 'You have a match' : `You have ${n} matches`;
-    sub = n > 1 ? 'Everyone liked these. The first one is the winner.' : 'Everyone liked this one.';
+    title = r.settings.goal === 1 ? 'It\'s a Match!' : 'You matched!';
+    sub = main.length > 1 ? `Everyone liked these ${main.length}. The first one is the winner.` : 'Everyone liked this one.';
   } else {
-    title = 'No cards left';
-    sub = n ? `You found ${n} match${n > 1 ? 'es' : ''} before the deck ran out.` : 'No title got a yes from everyone.';
+    title = 'Out of cards';
+    sub = main.length ? `You found ${main.length} match${main.length > 1 ? 'es' : ''} before the deck ran out.` : 'No title got a yes from everyone.';
   }
   const ap = r.autoPlay;
-  const apLine = ap && ap.status !== 'cancelled' ? `<div class="autoplay" id="ap">${
-    ap.status === 'pending' ? `<span>Playing the winner on ${esc(ap.deviceName)} in <b id="ap-s">${Math.ceil(ap.inMs / 1000)}</b> s</span><button class="link" id="ap-cancel">Cancel</button>`
-      : ap.status === 'playing' ? `<span>Now playing on ${esc(ap.deviceName)}.</span>`
-        : `<span class="error">Couldn't start playback: ${esc(ap.error || 'unknown error')}</span>`}</div>` : '';
+  const apLine = ap && ap.status !== 'cancelled' ? `<div class="toggle-row" id="ap" style="margin-top:14px">${
+    ap.status === 'pending' ? `<span>▶ Playing #1 on <b>${esc(ap.deviceName)}</b> in <b id="ap-s">${Math.ceil(ap.inMs / 1000)}</b>s</span><button class="pill-btn" id="ap-cancel">Cancel</button>`
+      : ap.status === 'playing' ? `<span>▶ Now playing on <b>${esc(ap.deviceName)}</b></span>`
+        : `<span class="error" style="text-align:left">Auto-play failed: ${esc(ap.error || '')}</span>`}</div>` : '';
 
   app.innerHTML = `
     <div class="screen">
       <div class="topbar"><div class="side"><button class="icon-btn" id="leave" aria-label="Leave">${I.close}</button></div>${logo}<div class="side"></div></div>
       <div class="scroll">
-        <div class="results-head"><h1>${esc(title)}</h1><p>${esc(sub)}</p>${apLine}</div>
-        ${n ? `<ul class="results">${main.map((m, i) => resultHtml(m, i)).join('')}</ul>` : ''}
-        ${res.close?.length ? `<h2 class="section close-calls">Almost</h2><ul class="results">${res.close.map((m, i) => resultHtml(m, i, `${m.likedBy.length} of ${r.players.length} liked it`)).join('')}</ul>` : ''}
+        <div class="results-hero"><h1 class="match-title">${esc(title)}</h1><p>${sub}</p>${apLine}</div>
+        <div class="result-list">${main.map((m, i) => resultHtml(m, i)).join('')}</div>
+        ${res.close?.length ? `<div class="section-title">Closest calls</div><div class="result-list">${res.close.map((m, i) => resultHtml(m, i, `, ${m.likedBy.length} of ${r.players.length} liked it`)).join('')}</div>` : ''}
       </div>
-      <div class="footer">
-        ${r.you.host ? '<button class="btn btn-primary block" id="again">Play again</button>' : '<div class="waiting">The host can start another round.</div>'}
+      <div class="sticky-footer stack">
+        ${r.you.host ? '<button class="btn btn-primary" id="again">Play again</button>' : '<div class="hint">The host can start a new round.</div>'}
       </div>
     </div>`;
-  if (reached && n && !S.celebrated) {
+  if (reached && main.length && !S.celebrated) {
     S.celebrated = true;
+    confetti($('.screen'), 60);
     vibrate([40, 30, 80]);
   }
   if (!reached) S.celebrated = false;
@@ -885,28 +899,26 @@ function renderResults() {
 }
 
 async function openDevicePicker(m) {
-  const el = openSheet(`<div class="body"><h3>Play ${esc(m.name)}</h3>
-    <p class="muted">${m.type === 'Series' ? 'Starts with the next unwatched episode. ' : ''}Choose a device that has Jellyfin open.</p>
-    <div id="devs"><div class="spinner"></div></div>
-    <p style="margin-top:14px"><a href="../web/#/details?id=${m.id}" target="_blank" rel="noopener">Open in Jellyfin</a></p></div>`);
+  const el = openSheet(`<div class="body"><h3>Play ${esc(m.name)}</h3><div class="hint" style="text-align:left;margin-bottom:14px">${m.type === 'Series' ? 'Starts the next unwatched episode. ' : ''}Pick a device running Jellyfin.</div><div id="devs"><div class="spinner"></div></div>
+    <a class="btn btn-outline" style="margin-top:8px;text-decoration:none" target="_blank" rel="noopener" href="../web/#/details?id=${m.id}">${I.external} Open in Jellyfin</a></div>`);
   const load = async () => {
     const box = $('#devs', el);
     box.innerHTML = '<div class="spinner"></div>';
     try {
       const devices = await api(`rooms/${S.room.code}/sessions?secret=${encodeURIComponent(S.session.secret)}`);
       if (!devices.length) {
-        box.innerHTML = '<p>No devices found. Open Jellyfin on your TV or phone, then try again.</p><button class="btn btn-secondary" id="rf">Look again</button>';
+        box.innerHTML = '<p class="hint">No devices found. Open Jellyfin on your TV or phone, then look again.</p><button class="btn btn-ghost" id="rf">Look again</button>';
         $('#rf', el).onclick = load;
         return;
       }
-      box.innerHTML = devices.map((d) => `<button class="device" data-s="${esc(d.id)}">${I.tv}<span><b>${esc(d.device)}</b><small>${esc([d.client, d.user, d.nowPlaying && `playing ${d.nowPlaying}`].filter(Boolean).join(', '))}</small></span></button>`).join('');
+      box.innerHTML = devices.map((d) => `<button class="device" data-s="${esc(d.id)}"><span class="ico">${I.tv}</span><span><b>${esc(d.device)}</b><small>${esc([d.client, d.user, d.nowPlaying && `playing ${d.nowPlaying}`].filter(Boolean).join(', '))}</small></span></button>`).join('');
       for (const b of box.querySelectorAll('[data-s]')) {
         b.onclick = async () => {
           b.disabled = true;
           try {
             await api(`rooms/${S.room.code}/play`, { secret: S.session.secret, itemId: m.id, sessionId: b.dataset.s });
             closeSheet();
-            toast(`Playing on ${devices.find((d) => d.id === b.dataset.s)?.device}`);
+            toast(`▶ Playing on ${devices.find((d) => d.id === b.dataset.s)?.device}`);
             vibrate(30);
           } catch (e) { toast(e.message); b.disabled = false; }
         };

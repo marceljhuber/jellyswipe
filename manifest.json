@@ -7,7 +7,7 @@
     "owner": "marceljhuber",
     "category": "General",
     "imageUrl": "https://raw.githubusercontent.com/marceljhuber/jellyswipe/main/Jellyfin.Plugin.JellySwipe/Web/icon.svg",
-    "changelog": "0.3.0: choose all titles or a random number of them; plainer, quieter redesign; first card images preload. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+    "changelog": "0.3.0: choose all titles or a random number of them; Jellyfin 10.11.0 fix; first card images preload; wording cleanup. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
     "versions": [
       {
         "version": "0.2.0.1200",

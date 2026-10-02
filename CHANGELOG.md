@@ -3,9 +3,10 @@
 ## 0.3.0
 
 - **Deck size:** choose *All titles* (default) or *A random selection of N*; type any number (20, 100, 1000 …). Admins can set an optional server-wide cap (0 = no limit).
-- **Redesigned UI:** plainer and quieter. System fonts, native form controls, lists instead of card stacks, no confetti or decorative animation. The Tinder card, colours and "It's a Match!" stay.
+- **Wording cleanup:** plain sentence-case labels and messages; same look and layout as 0.2.
 - Card images for the first cards are preloaded as soon as a game starts.
 - Pinch-zoom is no longer blocked (accessibility).
+- Fixed: games failed on Jellyfin 10.11.0 (its random sort returns duplicate rows); the deck is now shuffled by JellySwipe.
 
 ## 0.2.0: first public release
 
