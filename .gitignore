@@ -14,3 +14,4 @@ artifacts/
 .matrix-run.log
 .demo/
 marketing/
+dev/node_modules/

@@ -109,6 +109,8 @@ By default anyone who can reach JellySwipe can host games as the default host us
 
 ## Development
 
+Shipping a new version: follow [RELEASING.md](RELEASING.md).
+
 ```bash
 # build one variant (needs the matching .NET SDK: 8 for 10.9/10.10, 9 for 10.11, 10 for 12)
 dotnet build Jellyfin.Plugin.JellySwipe -c Release -p:JellyfinTarget=10.11     # 10.9 | 10.10 | 10.11 | 12

@@ -43,6 +43,17 @@ Original prompt (2026-09-30), lightly cleaned up for typos but otherwise as writ
 | Auth | **No login screen.** A Jellyfin web session in the same browser is reused; otherwise people host as a configurable default user (first admin by default). Guests join with just a name. | Feedback after first use: "it asked me username and password, remove that". Both can be restricted in the plugin settings. |
 | Sidebar entry | `inject.js` added to jellyfin-web's `index.html` through the File Transformation plugin (optional, via reflection) | That's the standard non-destructive way for plugins to extend jellyfin-web; without it JellySwipe still works at `/JellySwipe/`. |
 
+## Later decisions (0.3.0, 2026-10)
+
+| Question | Decision | Why |
+|---|---|---|
+| Deck size | *All titles* by default, or *a random selection of N* (N typed freely, e.g. 20, 100, 1000). Admin cap optional (0 = none). | Requested; big libraries shouldn't force a 2000-card session. |
+| Redesign | A plain "2019 hand-coded" redesign was built and **rejected**; the 0.2 look (colours, Nunito, tiles, chips, segmented controls, confetti) stays. Only wording was cleaned: sentence-case labels, plain sentences, no middle-dot meta strings or emoji in messages. | The owner preferred the original look; the goal is "not obviously AI-generated", not a new style. |
+| Deck randomness | Loaded unsorted and shuffled in memory; no DB-side random sort or limit. | Jellyfin 10.11.0's random sort returns duplicate rows and crashes. |
+| Compatibility | One codebase, four builds (10.9, 10.10, 10.11, 12) selected by the catalog via the 4th version part. | Covers every supported Jellyfin line without branches. |
+
+How to ship the next version: see [RELEASING.md](RELEASING.md).
+
 ## Tinder look & feel checklist
 
 - Pink→orange gradient brand, flame-style logo, white/dark UI

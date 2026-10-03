@@ -1,0 +1,9 @@
+{
+  "name": "jellyswipe-dev",
+  "private": true,
+  "description": "Dev helpers (screenshots). Install with: npm --prefix dev install",
+  "type": "module",
+  "devDependencies": {
+    "playwright-core": "^1.55.0"
+  }
+}
