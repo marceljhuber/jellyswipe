@@ -195,6 +195,11 @@ public sealed class RoomManager : IDisposable
         {
             Reevaluate(room);
             CheckEnd(room);
+            if (room.Status == "playing" && room.Mode == "multi" && room.Players.Count == 1)
+            {
+                // Matches need two players: without this the one left behind swiped a deck that could never match.
+                Finish(room, "alone");
+            }
         }
 
         Broadcast(room);
@@ -217,6 +222,13 @@ public sealed class RoomManager : IDisposable
             }
 
             SendTo(room, target.Id, "kicked", "{}");
+            foreach (var l in room.Listeners.Where(l => l.PlayerId == target.Id).ToList())
+            {
+                // Otherwise the kicked phone kept receiving the lobby's state.
+                l.Channel.Writer.TryComplete();
+                room.Listeners.Remove(l);
+            }
+
             RemovePlayer(room, target);
         }
     }
@@ -235,17 +247,51 @@ public sealed class RoomManager : IDisposable
             {
                 throw new GameException(409, "Already playing");
             }
+
+            if (room.Dealing)
+            {
+                // A double tap on Start used to deal two decks, the second replacing the first mid-swipe.
+                throw new GameException(409, "Already dealing the cards");
+            }
+
+            room.Dealing = true;
         }
 
-        // Building the deck hits the library; do it outside the lock.
-        var deck = _library.BuildDeck(_library.GetUser(room.HostUserId), room.Settings, EffectiveLimit(room.Settings.DeckLimit));
-        if (deck.Count == 0)
+        List<DeckItem> deck;
+        try
         {
-            throw new GameException(422, "No titles match these filters");
+            // Building the deck hits the library; do it outside the lock.
+            deck = _library.BuildDeck(_library.GetUser(room.HostUserId), room.Settings, EffectiveLimit(room.Settings.DeckLimit));
+        }
+        catch
+        {
+            lock (room.Sync)
+            {
+                room.Dealing = false;
+            }
+
+            throw;
         }
 
+        StartRound(room, deck);
+    }
+
+    /// <summary>Second half of <see cref="Start"/>: deals a built deck (separate so tests can deal without a library).</summary>
+    internal void StartRound(Room room, List<DeckItem> deck)
+    {
         lock (room.Sync)
         {
+            room.Dealing = false;
+            if (deck.Count == 0)
+            {
+                throw new GameException(422, "No titles match these filters");
+            }
+
+            if (!_rooms.ContainsKey(room.Code) || room.Players.Count == 0)
+            {
+                throw new GameException(404, "Lobby not found");
+            }
+
             room.Deck = deck;
             room.DeckIndex = deck.Select((d, i) => (d.Id, i)).ToDictionary(x => x.Id, x => x.i);
             room.Swipes = [];
@@ -347,8 +393,13 @@ public sealed class RoomManager : IDisposable
             return;
         }
 
+        Finish(room, reached ? "goal" : "exhausted");
+    }
+
+    private void Finish(Room room, string reason)
+    {
         room.Status = "finished";
-        var reason = reached ? "goal" : "exhausted";
+        var reached = reason == "goal";
         if (room.Mode == "solo")
         {
             room.Results = new Results { Reason = reason, Picks = SoloPicks(room.Players[0]) };
@@ -392,6 +443,12 @@ public sealed class RoomManager : IDisposable
             if (itemId is null || !player.OrderIndex.TryGetValue(itemId, out var idx))
             {
                 throw new GameException(400, "Unknown title");
+            }
+
+            if (room.Matches.Contains(itemId))
+            {
+                // Re-sending a swipe could silently turn a match's like into a nope.
+                throw new GameException(409, "Already a match — no take-backs!");
             }
 
             if (!room.Swipes.TryGetValue(itemId, out var votes))

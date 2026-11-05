@@ -137,6 +137,9 @@ internal sealed class Room
 
     public string Status { get; set; } = "lobby";
 
+    /// <summary>Gets or sets a value indicating whether a deck is being built for this room right now.</summary>
+    public bool Dealing { get; set; }
+
     public string? Mode { get; set; }
 
     public string HostId { get; set; } = string.Empty;

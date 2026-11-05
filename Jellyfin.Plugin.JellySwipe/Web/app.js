@@ -855,6 +855,9 @@ function renderResults() {
   } else if (reached) {
     title = r.settings.goal === 1 ? 'It\'s a Match!' : 'You matched!';
     sub = main.length > 1 ? `Everyone liked these ${main.length}. The first one is the winner.` : 'Everyone liked this one.';
+  } else if (res.reason === 'alone') {
+    title = 'Everyone else left';
+    sub = main.length ? `You found ${main.length} match${main.length > 1 ? 'es' : ''} before the others left.` : 'Matches need at least two players.';
   } else {
     title = 'Out of cards';
     sub = main.length ? `You found ${main.length} match${main.length > 1 ? 'es' : ''} before the deck ran out.` : 'No title got a yes from everyone.';

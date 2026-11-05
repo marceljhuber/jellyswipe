@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Pass the target globally so the plugin restores the same build: dotnet test tests/JellySwipe.Tests -p:JellyfinTarget=12 -->
+  <PropertyGroup>
+    <TargetFramework Condition="'$(JellyfinTarget)' == '12'">net10.0</TargetFramework>
+    <TargetFramework Condition="'$(JellyfinTarget)' != '12'">net9.0</TargetFramework>
+    <TestJellyfinVersion Condition="'$(JellyfinTarget)' == '12'">12.4.0</TestJellyfinVersion>
+    <TestJellyfinVersion Condition="'$(JellyfinTarget)' != '12'">10.11.0</TestJellyfinVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!-- The plugin excludes Jellyfin's runtime assemblies (the server provides them); tests need them. -->
+    <PackageReference Include="Jellyfin.Controller" Version="$(TestJellyfinVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Jellyfin.Plugin.JellySwipe/Jellyfin.Plugin.JellySwipe.csproj" />
+  </ItemGroup>
+</Project>

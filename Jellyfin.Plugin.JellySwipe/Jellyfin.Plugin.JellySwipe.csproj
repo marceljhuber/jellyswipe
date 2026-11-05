@@ -9,7 +9,7 @@
     The 4th version component encodes the target so Jellyfin's catalog picks the right build.
   -->
   <PropertyGroup>
-    <PluginVersion>0.3.0</PluginVersion>
+    <PluginVersion>0.3.1</PluginVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(JellyfinTarget)' == '10.9'">
@@ -57,6 +57,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Jellyfin.Controller" Version="$(JellyfinPackageVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Jellyfin.Model" Version="$(JellyfinPackageVersion)" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="JellySwipe.Tests" />
   </ItemGroup>
 
   <ItemGroup>

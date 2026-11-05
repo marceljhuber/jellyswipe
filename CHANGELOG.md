@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1
+
+- Fix: two quick taps on *Start* could deal two decks; a second start now gets HTTP 409.
+- Fix: when everyone else leaves a multi-player game, it ends ("Everyone else left") instead of
+  waiting forever.
+- Fix: swiping an already matched title again could change the result; matches are final.
+- Fix: a kicked player's live connection stayed open.
+- New unit tests (`tests/JellySwipe.Tests`, `-p:JellyfinTarget=12`).
+- Build: the plugin and the test project no longer share one restore folder (`artifacts/obj`), which made test builds fail every other run.
+
 ## 0.3.0
 
 - **Deck size:** choose *All titles* (default) or *A random selection of N*; type any number (20, 100, 1000 …). Admins can set an optional server-wide cap (0 = no limit).

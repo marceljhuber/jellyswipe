@@ -1,8 +1,9 @@
 <Project>
-  <!-- Per-Jellyfin-target build folders outside the project dir, so variants never compile each other's generated files. -->
+  <!-- Per-Jellyfin-target build folders outside the project dir, so variants never compile each other's generated files.
+       obj is also per project: the plugin and its test project must not share one project.assets.json. -->
   <PropertyGroup>
     <JellyfinTarget Condition="'$(JellyfinTarget)' == ''">10.11</JellyfinTarget>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/obj/$(JellyfinTarget)/</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/obj/$(JellyfinTarget)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
     <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts/bin/$(JellyfinTarget)/</BaseOutputPath>
   </PropertyGroup>
 </Project>
