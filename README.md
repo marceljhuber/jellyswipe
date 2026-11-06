@@ -26,10 +26,10 @@ Runs entirely inside Jellyfin at `https://<your-jellyfin>/JellySwipe/`, with no 
 
 | Jellyfin | Plugin build | Tested on | Sidebar entry |
 |---|---|---|---|
-| 10.9.x | `0.2.0.109` (.NET 8) | 10.9.11 | open `/JellySwipe/` directly (File Transformation isn't available for 10.9) |
-| 10.10.x | `0.2.0.1010` (.NET 8) | 10.10.7 | ✅ with File Transformation 2.5.x |
-| 10.11.x | `0.2.0.1011` (.NET 9) | 10.11.0, 10.11.11 | ✅ with a File Transformation build matching your server |
-| 12.x | `0.2.0.1200` (.NET 10) | 12.0, 12.1 | ✅ (new MUI layout supported) |
+| 10.9.x | `0.3.x.109` (.NET 8) | 10.9.11 | open `/JellySwipe/` directly (File Transformation isn't available for 10.9) |
+| 10.10.x | `0.3.x.1010` (.NET 8) | 10.10.7 | ✅ with File Transformation 2.5.x |
+| 10.11.x | `0.3.x.1011` (.NET 9) | 10.11.0, 10.11.11 | ✅ with a File Transformation build matching your server |
+| 12.x | `0.3.x.1200` (.NET 10) | 12.0, 12.1, 12.4 | ✅ (new MUI layout supported) |
 
 The plugin catalog installs the right build automatically. Each release is runtime-tested against real Jellyfin containers with `dev/test-matrix.sh`.
 
