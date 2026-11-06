@@ -10,6 +10,38 @@
     "changelog": "0.3.1: fixes a double-start race, games stuck after everyone else leaves, matches changing on re-swipe and kicked players staying connected; unit tests. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
     "versions": [
       {
+        "version": "0.3.1.1200",
+        "changelog": "0.3.1: fixes a double-start race, games stuck after everyone else leaves, matches changing on re-swipe and kicked players staying connected; unit tests. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "12.0.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.1/jellyswipe_0.3.1.1200.zip",
+        "checksum": "4ad19be84de9eb9742bd2685ddd61621",
+        "timestamp": "2026-11-06T19:51:59Z"
+      },
+      {
+        "version": "0.3.1.1011",
+        "changelog": "0.3.1: fixes a double-start race, games stuck after everyone else leaves, matches changing on re-swipe and kicked players staying connected; unit tests. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.1/jellyswipe_0.3.1.1011.zip",
+        "checksum": "126b7da6bceac743c5e0635a373e89ae",
+        "timestamp": "2026-11-06T19:51:59Z"
+      },
+      {
+        "version": "0.3.1.1010",
+        "changelog": "0.3.1: fixes a double-start race, games stuck after everyone else leaves, matches changing on re-swipe and kicked players staying connected; unit tests. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "10.10.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.1/jellyswipe_0.3.1.1010.zip",
+        "checksum": "e27a29cd062520e3812b92706e419b46",
+        "timestamp": "2026-11-06T19:51:59Z"
+      },
+      {
+        "version": "0.3.1.109",
+        "changelog": "0.3.1: fixes a double-start race, games stuck after everyone else leaves, matches changing on re-swipe and kicked players staying connected; unit tests. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
+        "targetAbi": "10.9.0.0",
+        "sourceUrl": "https://github.com/marceljhuber/jellyswipe/releases/download/v0.3.1/jellyswipe_0.3.1.109.zip",
+        "checksum": "475fb79bceaf81b72027e6657dde894d",
+        "timestamp": "2026-11-06T19:51:59Z"
+      },
+      {
         "version": "0.3.0.1200",
         "changelog": "0.3.0: choose all titles or a random number of them; Jellyfin 10.11.0 fix; first card images preload; wording cleanup. Supports Jellyfin 10.9, 10.10, 10.11 and 12.x.",
         "targetAbi": "12.0.0.0",
